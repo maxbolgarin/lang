@@ -91,9 +91,18 @@ func ConvertMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(
 	return out, nil
 }
 
-// Copy returns a new copy of a provided slice.
+// Copy returns a copy of a provided slice.
 func Copy[T any](input []T) []T {
 	out := make([]T, len(input))
 	copy(out, input)
+	return out
+}
+
+// CopyMap returns a copy of a provided map.
+func CopyMap[K comparable, T any](input map[K]T) map[K]T {
+	out := make(map[K]T, len(input))
+	for k, v := range input {
+		out[k] = v
+	}
 	return out
 }

@@ -169,3 +169,11 @@ func TestCopy(t *testing.T) {
 		t.Fatalf("Expected different pointers but got the same")
 	}
 }
+
+func TestCopyMap(t *testing.T) {
+	input := map[string]int{"a": 1, "b": 2, "c": 3}
+	result := lang.CopyMap(input)
+	if !reflect.DeepEqual(input, result) {
+		t.Fatalf("Expected %v but got %v", input, result)
+	}
+}
