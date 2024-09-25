@@ -1,0 +1,99 @@
+package lang
+
+// SliceToMap returns a new map created calling a transform function on every element of slice,
+// function returns a key and an according value. Return empty key to pass iteration.
+func SliceToMap[T any, K comparable, V any](input []T, transform func(T) (K, V)) map[K]V {
+	out := make(map[K]V, len(input))
+	for _, e := range input {
+		k, v := transform(e)
+		out[k] = v
+	}
+	return out
+}
+
+// SliceToMapByKey returns a new map created calling a transform function on every element of slice,
+// function returns a key and current element of slice becomes a value.
+func SliceToMapByKey[T any, K comparable](input []T, key func(T) K) map[K]T {
+	return SliceToMap(input, func(t T) (K, T) { return key(t), t })
+}
+
+// PairsToMap transforms a slice with pairs of elements into a map.
+// The first element of each pair is a key and the second is a value.
+func PairsToMap[T comparable](input []T) map[T]T {
+	out := make(map[T]T, len(input)/2)
+	for i := 0; i < len(input)-1; i += 2 {
+		out[input[i]] = input[i+1]
+	}
+	return out
+}
+
+// Filter returns a new slice with elements filtered by the given filter function.
+func Filter[T any](input []T, filter func(T) bool) []T {
+	out := make([]T, 0, len(input))
+	for _, e := range input {
+		if filter(e) {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// Map returns a new slice with elements transformed by the given function with the same type.
+func Map[T any](input []T, transform func(T) T) []T {
+	out := make([]T, 0, len(input))
+	for _, e := range input {
+		out = append(out, transform(e))
+	}
+	return out
+}
+
+// Convert returns a new slice with elements transformed by the given function with another type.
+func Convert[T, K any](input []T, transform func(T) K) []K {
+	out := make([]K, 0, len(input))
+	for _, e := range input {
+		out = append(out, transform(e))
+	}
+	return out
+}
+
+// ConvertWithErr returns a new slice with elements transformed by the given function with another type.
+func ConvertWithErr[T, K any](input []T, transform func(T) (K, error)) ([]K, error) {
+	out := make([]K, 0, len(input))
+	for _, e := range input {
+		res, err := transform(e)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, res)
+	}
+	return out, nil
+}
+
+// ConvertMap returns a new map with elements transformed by the given function with another type.
+func ConvertMap[K comparable, T1, T2 any](input map[K]T1, transform func(T1) T2) map[K]T2 {
+	out := make(map[K]T2, len(input))
+	for k, v := range input {
+		out[k] = transform(v)
+	}
+	return out
+}
+
+// ConvertMapWithErr returns a new map with elements transformed by the given function with another type.
+func ConvertMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(T1) (T2, error)) (map[K]T2, error) {
+	out := make(map[K]T2, len(input))
+	for k, v := range input {
+		res, err := transform(v)
+		if err != nil {
+			return nil, err
+		}
+		out[k] = res
+	}
+	return out, nil
+}
+
+// Copy returns a new copy of a provided slice.
+func Copy[T any](input []T) []T {
+	out := make([]T, len(input))
+	copy(out, input)
+	return out
+}
