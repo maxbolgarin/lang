@@ -171,3 +171,17 @@ func CheckMapSingle[K comparable, V any](m map[K]V, k K, v V) map[K]V {
 	m[k] = v
 	return m
 }
+
+// IsFound returns if the value is in the slice.
+//
+//	a := []int{1, 2, 3}
+//	b := IsFound(a, 3)  // b == true
+//	c := IsFound(a, 4)  // c == false
+func IsFound[T comparable](s []T, v T) bool {
+	for _, e := range s {
+		if e == v {
+			return true
+		}
+	}
+	return false
+}

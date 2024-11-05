@@ -272,3 +272,16 @@ func TestCheckMapSingle(t *testing.T) {
 		t.Errorf("expected %v but got %v", b, v)
 	}
 }
+
+func TestIsFound(t *testing.T) {
+	a := []string{"foo", "bar"}
+	if v := lang.IsFound(a, "foo"); !v {
+		t.Errorf("expected %v but got %v", true, v)
+	}
+	if v := lang.IsFound(a, "bar"); !v {
+		t.Errorf("expected %v but got %v", true, v)
+	}
+	if v := lang.IsFound(a, "baz"); v {
+		t.Errorf("expected %v but got %v", false, v)
+	}
+}
