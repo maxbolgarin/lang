@@ -177,3 +177,30 @@ func TestCopyMap(t *testing.T) {
 		t.Fatalf("Expected %v but got %v", input, result)
 	}
 }
+
+func TestWithoutEmpty(t *testing.T) {
+	input := []string{"foo", "", "bar"}
+	expected := []string{"foo", "bar"}
+	result := lang.WithoutEmpty(input)
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Expected %v but got %v", expected, result)
+	}
+}
+
+func TestWithoutEmptyValues(t *testing.T) {
+	input := map[string]string{"foo": "", "bar": "bar"}
+	expected := map[string]string{"bar": "bar"}
+	result := lang.WithoutEmptyValues(input)
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Expected %v but got %v", expected, result)
+	}
+}
+
+func TestWithoutEmptyKeys(t *testing.T) {
+	input := map[string]string{"": "aaa", "bar": "bar"}
+	expected := map[string]string{"bar": "bar"}
+	result := lang.WithoutEmptyKeys(input)
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Expected %v but got %v", expected, result)
+	}
+}

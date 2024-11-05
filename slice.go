@@ -106,3 +106,39 @@ func CopyMap[K comparable, T any](input map[K]T) map[K]T {
 	}
 	return out
 }
+
+// WithoutEmpty returns a new slice without empty elements.
+func WithoutEmpty[T comparable](input []T) []T {
+	var empty T
+	out := make([]T, 0, len(input))
+	for _, v := range input {
+		if v != empty {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+// WithoutEmptyKeys returns a new map without empty keys.
+func WithoutEmptyKeys[K comparable, T any](input map[K]T) map[K]T {
+	var empty K
+	out := make(map[K]T, len(input))
+	for k, v := range input {
+		if k != empty {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// WithoutEmptyValues returns a new map without empty values.
+func WithoutEmptyValues[K, T comparable](input map[K]T) map[K]T {
+	var empty T
+	out := make(map[K]T, len(input))
+	for k, v := range input {
+		if v != empty {
+			out[k] = v
+		}
+	}
+	return out
+}
