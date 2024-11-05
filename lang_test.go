@@ -1,6 +1,7 @@
 package lang_test
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -211,5 +212,63 @@ func TestIf(t *testing.T) {
 	}
 	if v := lang.If(false, "foo", "bar"); v != "bar" {
 		t.Errorf("expected %q but got %q", "bar", v)
+	}
+}
+
+func TestCheckSlice(t *testing.T) {
+	a := []string{}
+	b := []string{"foo", "bar"}
+	if v := lang.CheckSlice(a, b); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
+	}
+	if v := lang.CheckSlice(b, a); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
+	}
+	if v := lang.CheckSlice(a, a); !reflect.DeepEqual(v, a) {
+		t.Errorf("expected %v but got %v", a, v)
+	}
+	if v := lang.CheckSlice(b, b); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
+	}
+}
+
+func TestCheckSliceSingle(t *testing.T) {
+	a := []string{}
+	b := []string{"foo", "bar"}
+	c := []string{"foo"}
+	if v := lang.CheckSliceSingle(a, "foo"); !reflect.DeepEqual(v, c) {
+		t.Errorf("expected %v but got %v", c, v)
+	}
+	if v := lang.CheckSliceSingle(b, "foo"); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
+	}
+}
+
+func TestCheckMap(t *testing.T) {
+	a := map[string]string{}
+	b := map[string]string{"foo": "bar"}
+	if v := lang.CheckMap(a, b); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
+	}
+	if v := lang.CheckMap(b, a); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
+	}
+	if v := lang.CheckMap(a, a); !reflect.DeepEqual(v, a) {
+		t.Errorf("expected %v but got %v", a, v)
+	}
+	if v := lang.CheckMap(b, b); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
+	}
+}
+
+func TestCheckMapSingle(t *testing.T) {
+	a := map[string]string{}
+	b := map[string]string{"foo": "bar"}
+	c := map[string]string{"foo2": "bar2"}
+	if v := lang.CheckMapSingle(a, "foo2", "bar2"); !reflect.DeepEqual(v, c) {
+		t.Errorf("expected %v but got %v", c, v)
+	}
+	if v := lang.CheckMapSingle(b, "foo2", "bar2"); !reflect.DeepEqual(v, b) {
+		t.Errorf("expected %v but got %v", b, v)
 	}
 }

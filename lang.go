@@ -122,3 +122,52 @@ func GetWithSep(value string, sep byte) string {
 	}
 	return value + string(sep)
 }
+
+// CheckSlice returns the first argument if it is not empty, else returns the second one.
+//
+//	a := []int{}
+//	b := []string{"foo", "bar"}
+//	c := CheckSlice(a, b)  // c == []string{"foo", "bar"}
+func CheckSlice[T any](v1, v2 []T) []T {
+	if len(v1) == 0 {
+		return v2
+	}
+	return v1
+}
+
+// CheckSliceSingle returns the first argument if it is not empty, else returns the second one wrapped in a slice.
+//
+//	a := nil
+//	b := "foo"
+//	c := CheckSliceSingle(a, b)  // c == []string{"foo"}
+func CheckSliceSingle[T any](s []T, v T) []T {
+	if len(s) > 0 {
+		return s
+	}
+	return []T{v}
+}
+
+// CheckMap returns the first argument if it is not empty, else returns the second one.
+//
+//	a := map[string]int{}
+//	b := map[string]string{"foo": "bar"}
+//	c := CheckMap(a, b)  // c == map[string]string{"foo": "bar"}
+func CheckMap[K comparable, V any](v1, v2 map[K]V) map[K]V {
+	if len(v1) == 0 {
+		return v2
+	}
+	return v1
+}
+
+// CheckMapSingle returns the first argument if it is not empty, else returns the second one wrapped in a map.
+//
+//	a := nil
+//	b := "foo"
+//	c := CheckMapSingle(a, b)  // c == map[string]string{"foo": "bar"}
+func CheckMapSingle[K comparable, V any](m map[K]V, k K, v V) map[K]V {
+	if len(m) > 0 {
+		return m
+	}
+	m[k] = v
+	return m
+}
