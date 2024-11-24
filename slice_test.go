@@ -3,6 +3,7 @@ package lang_test
 import (
 	"errors"
 	"reflect"
+	"sort"
 	"strconv"
 	"testing"
 
@@ -159,6 +160,17 @@ func TestConvertMapWithErr(t *testing.T) {
 	}
 }
 
+func TestFilterMap(t *testing.T) {
+	input := map[string]int{"a": 1, "b": 2, "c": 3}
+	expected := map[string]int{"b": 2}
+	result := lang.FilterMap(input, func(k string, v int) bool {
+		return v%2 == 0
+	})
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Expected %v but got %v", expected, result)
+	}
+}
+
 func TestCopy(t *testing.T) {
 	input := []int{1, 2, 3, 4, 5}
 	result := lang.Copy(input)
@@ -203,6 +215,7 @@ func TestValues(t *testing.T) {
 	input := map[string]int{"a": 1, "b": 2, "c": 3}
 	expected := []int{1, 2, 3}
 	result := lang.Values(input)
+	sort.IntSlice(result).Sort()
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("Expected %v but got %v", expected, result)
 	}

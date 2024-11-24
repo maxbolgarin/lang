@@ -91,6 +91,17 @@ func ConvertMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(
 	return out, nil
 }
 
+// FilterMap returns a new map with elements filtered by the given filter function.
+func FilterMap[K comparable, T any](input map[K]T, filter func(K, T) bool) map[K]T {
+	out := make(map[K]T, len(input))
+	for k, v := range input {
+		if filter(k, v) {
+			out[k] = v
+		}
+	}
+	return out
+}
+
 // Copy returns a copy of a provided slice.
 func Copy[T any](input []T) []T {
 	out := make([]T, len(input))
