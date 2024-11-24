@@ -119,6 +119,15 @@ func WithoutEmpty[T comparable](input []T) []T {
 	return out
 }
 
+// Keys returns a new slice with keys of a provided map.
+func Keys[K comparable, T any](input map[K]T) []K {
+	out := make([]K, 0, len(input))
+	for k := range input {
+		out = append(out, k)
+	}
+	return out
+}
+
 // WithoutEmptyKeys returns a new map without empty keys.
 func WithoutEmptyKeys[K comparable, T any](input map[K]T) map[K]T {
 	var empty K

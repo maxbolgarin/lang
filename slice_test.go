@@ -178,6 +178,16 @@ func TestCopyMap(t *testing.T) {
 	}
 }
 
+func TestKeys(t *testing.T) {
+	input := map[string]int{"a": 1, "b": 2, "c": 3}
+	expected := []string{"a", "b", "c"}
+	result := lang.Keys(input)
+	sort.Sort(sort.StringSlice(result))
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Expected %v but got %v", expected, result)
+	}
+}
+
 func TestWithoutEmpty(t *testing.T) {
 	input := []string{"foo", "", "bar"}
 	expected := []string{"foo", "bar"}
