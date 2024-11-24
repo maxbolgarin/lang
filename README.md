@@ -2,13 +2,13 @@
 
 [![Go Version][version-img]][doc] [![GoDoc][doc-img]][doc] [![Build][ci-img]][ci] [![GoReport][report-img]][report]
 
-**Package `lang` provides useful generic oneliners to work with variables and pointers**. 
+**Package `lang` provides useful generic one-liners to work with variables, slices and maps**
 
 ```
-go get github.com/maxbolgarin/lang
+go get -u github.com/maxbolgarin/lang
 ```
 
-Add to your Go program a little spice of functional languagess: [read docs and become smarter][doc].
+Add to your Go program a spice of functional languages: [docs][doc].
 
 You also should try this package: [lo](https://github.com/samber/lo).
 
