@@ -67,6 +67,9 @@ func RecoverWithHandler(handler func(err any)) bool {
 }
 
 func printErrorWithStack(l Logger, err any) {
+	if l == nil {
+		return
+	}
 	stack := debug.Stack()
 	l.Error(string(stack), "error", err) // build with -trimpath to avoid printing build path in trace
 }
