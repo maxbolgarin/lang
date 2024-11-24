@@ -149,6 +149,18 @@ func Values[K comparable, T any](input map[K]T) []T {
 	return out
 }
 
+// ValuesIf returns a new slice with values of a provided map filtered by the given filter function.
+func ValuesIf[K comparable, T any](input map[K]T, filter func(K, T) bool) []T {
+	out := make([]T, 0, len(input))
+	for k, v := range input {
+		if !filter(k, v) {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
+}
+
 // WithoutEmptyKeys returns a new map without empty keys.
 func WithoutEmptyKeys[K comparable, T any](input map[K]T) map[K]T {
 	var empty K

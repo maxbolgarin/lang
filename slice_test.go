@@ -208,6 +208,17 @@ func TestValues(t *testing.T) {
 	}
 }
 
+func TestValuesIf(t *testing.T) {
+	input := map[string]int{"a": 1, "b": 2, "c": 3}
+	expected := []int{2}
+	result := lang.ValuesIf(input, func(k string, v int) bool {
+		return v%2 == 0
+	})
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Expected %v but got %v", expected, result)
+	}
+}
+
 func TestWithoutEmpty(t *testing.T) {
 	input := []string{"foo", "", "bar"}
 	expected := []string{"foo", "bar"}
