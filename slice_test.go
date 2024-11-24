@@ -188,6 +188,17 @@ func TestKeys(t *testing.T) {
 	}
 }
 
+func TestKeysIf(t *testing.T) {
+	input := map[string]int{"a": 1, "b": 2, "c": 3}
+	expected := []string{"b"}
+	result := lang.KeysIf(input, func(k string, v int) bool {
+		return v%2 == 0
+	})
+	if !reflect.DeepEqual(expected, result) {
+		t.Fatalf("Expected %v but got %v", expected, result)
+	}
+}
+
 func TestValues(t *testing.T) {
 	input := map[string]int{"a": 1, "b": 2, "c": 3}
 	expected := []int{1, 2, 3}

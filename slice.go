@@ -53,7 +53,7 @@ func Convert[T, K any](input []T, transform func(T) K) []K {
 	for _, e := range input {
 		out = append(out, transform(e))
 	}
-	return out
+	return Map(out, func(k K) K { return k })
 }
 
 // ConvertWithErr returns a new slice with elements transformed by the given function with another type.
@@ -123,6 +123,18 @@ func WithoutEmpty[T comparable](input []T) []T {
 func Keys[K comparable, T any](input map[K]T) []K {
 	out := make([]K, 0, len(input))
 	for k := range input {
+		out = append(out, k)
+	}
+	return out
+}
+
+// KeysIf returns a new slice with keys of a provided map filtered by the given filter function.
+func KeysIf[K comparable, T any](input map[K]T, filter func(K, T) bool) []K {
+	out := make([]K, 0, len(input))
+	for k, v := range input {
+		if !filter(k, v) {
+			continue
+		}
 		out = append(out, k)
 	}
 	return out
