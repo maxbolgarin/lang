@@ -1,7 +1,6 @@
 package lang_test
 
 import (
-	"log/slog"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,7 +15,6 @@ type testLogger struct {
 }
 
 func (s *testLogger) Error(msg string, args ...any) {
-	slog.Default().Error(msg, args...)
 	s.logs.Add(1)
 	s.lastMsg.Store(msg)
 }
