@@ -13,7 +13,7 @@ Add to your Go program a spice of functional languages: [docs][doc].
 You also should try this package: [lo](https://github.com/samber/lo).
 
 
-[version-img]: https://img.shields.io/badge/Go-%3E%3D%201.18-%23007d9c
+[version-img]: https://img.shields.io/badge/Go-%3E%3D%201.19-%23007d9c
 [doc-img]: https://pkg.go.dev/badge/github.com/maxbolgarin/lang
 [doc]: https://pkg.go.dev/github.com/maxbolgarin/lang
 [ci-img]: https://github.com/maxbolgarin/lang/actions/workflows/go.yml/badge.svg
