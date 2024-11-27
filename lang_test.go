@@ -285,3 +285,77 @@ func TestIsFound(t *testing.T) {
 		t.Errorf("expected %v but got %v", false, v)
 	}
 }
+
+func TestMaxLen(t *testing.T) {
+	a := []string{}
+	v := lang.MaxLen(a, 2)
+	if len(v) != 0 {
+		t.Errorf("expected %d but got %d", 0, len(v))
+	}
+	a = []string{"foo", "bar", "baz"}
+	v = lang.MaxLen(a, 2)
+	if len(v) != 2 {
+		t.Errorf("expected %d but got %d", 2, len(v))
+	}
+	for i := range v {
+		if v[i] != a[i] {
+			t.Errorf("expected %q but got %q", a[i], v[i])
+		}
+	}
+}
+
+func TestAppendIfAll(t *testing.T) {
+	a := []string{}
+	if v := lang.AppendIfAll(a, "foo"); !reflect.DeepEqual(v, []string{"foo"}) {
+		t.Errorf("expected %v but got %v", []string{"foo"}, v)
+	}
+	b := []string{"foo", "bar"}
+	c := lang.AppendIfAll(b, "foo")
+	if !reflect.DeepEqual(c, []string{"foo", "bar", "foo"}) {
+		t.Errorf("expected %v but got %v", []string{"foo", "bar", "foo"}, c)
+	}
+	d := lang.AppendIfAll(b, "")
+	if !reflect.DeepEqual(d, b) {
+		t.Errorf("expected %v but got %v", b, d)
+	}
+	e := lang.AppendIfAll(b, "foo", "")
+	if !reflect.DeepEqual(e, []string{"foo", "bar"}) {
+		t.Errorf("expected %v but got %v", []string{"foo", "bar"}, e)
+	}
+	f := lang.AppendIfAll(b, "foo", "bar")
+	if !reflect.DeepEqual(f, []string{"foo", "bar", "foo", "bar"}) {
+		t.Errorf("expected %v but got %v", []string{"foo", "bar", "foo", "bar"}, f)
+	}
+	f = lang.AppendIfAll(b)
+	if !reflect.DeepEqual(f, b) {
+		t.Errorf("expected %v but got %v", b, f)
+	}
+}
+
+func TestAppendIfAny(t *testing.T) {
+	a := []string{}
+	if v := lang.AppendIfAny(a, "foo"); !reflect.DeepEqual(v, []string{"foo"}) {
+		t.Errorf("expected %v but got %v", []string{"foo"}, v)
+	}
+	b := []string{"foo", "bar"}
+	c := lang.AppendIfAny(b, "foo")
+	if !reflect.DeepEqual(c, []string{"foo", "bar", "foo"}) {
+		t.Errorf("expected %v but got %v", []string{"foo", "bar", "foo"}, c)
+	}
+	d := lang.AppendIfAny(b, "")
+	if !reflect.DeepEqual(d, []string{"foo", "bar"}) {
+		t.Errorf("expected %v but got %v", []string{"foo", "bar"}, d)
+	}
+	e := lang.AppendIfAny(b, "foo", "")
+	if !reflect.DeepEqual(e, []string{"foo", "bar", "foo"}) {
+		t.Errorf("expected %v but got %v", []string{"foo", "bar", "foo"}, e)
+	}
+	f := lang.AppendIfAny(b, "foo", "bar")
+	if !reflect.DeepEqual(f, []string{"foo", "bar", "foo", "bar"}) {
+		t.Errorf("expected %v but got %v", []string{"foo", "bar", "foo", "bar"}, f)
+	}
+	f = lang.AppendIfAny(b)
+	if !reflect.DeepEqual(f, b) {
+		t.Errorf("expected %v but got %v", b, f)
+	}
+}

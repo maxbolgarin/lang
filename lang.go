@@ -185,3 +185,56 @@ func IsFound[T comparable](s []T, v T) bool {
 	}
 	return false
 }
+
+// MaxLen returns the slice with the maximum length.
+//
+//	a := []int{1, 2, 3}
+//	b := MaxLen(a, 2) // b == [1, 2]
+func MaxLen[T any](s []T, max int) []T {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max]
+}
+
+// AppendIfAll appends the value to the slice if it is not empty.
+// All values must be different from zero to be appended.
+//
+//	b := []string{"foo", "bar"}
+//	c := AppendIfAll(b, "foo")  // c == []string{"foo", "bar", "foo"}
+//	d := AppendIfAll(b, "")     // d == []string{"foo", "bar"}
+//	e := AppendIfAll(b, "foo", "")  // e == []string{"foo", "bar"}
+//	f := AppendIfAll(b, "foo", "bar")  // f == []string{"foo", "bar", "foo", "bar"}
+func AppendIfAll[T comparable](s []T, v ...T) []T {
+	if len(v) == 0 {
+		return s
+	}
+	var zero T
+	for _, e := range v {
+		if e == zero {
+			return s
+		}
+	}
+	return append(s, v...)
+}
+
+// AppendIfAny appends the value to the slice if it is not empty.
+// Any value must be different from zero to be appended.
+//
+//	b := []string{"foo", "bar"}
+//	c := AppendIfAny(b, "foo")  // c == []string{"foo", "bar", "foo"}
+//	d := AppendIfAny(b, "")     // d == []string{"foo", "bar"}
+//	e := AppendIfAny(b, "foo", "")  // e == []string{"foo", "bar", "foo"}
+//	f := AppendIfAny(b, "foo", "bar")  // f == []string{"foo", "bar", "foo", "bar"}
+func AppendIfAny[T comparable](s []T, v ...T) []T {
+	if len(v) == 0 {
+		return s
+	}
+	var zero T
+	for _, e := range v {
+		if e != zero {
+			s = append(s, e)
+		}
+	}
+	return s
+}
