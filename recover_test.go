@@ -57,6 +57,11 @@ func TestRecover(t *testing.T) {
 	panic("panic-error")
 }
 
+func TestRecoverNilLog(t *testing.T) {
+	defer lang.Recover(nil)
+	panic("panic-error")
+}
+
 func TestRecoverWithErr(t *testing.T) {
 	var err error
 	defer func() {
