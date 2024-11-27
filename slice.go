@@ -91,6 +91,51 @@ func ConvertMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(
 	return out, nil
 }
 
+// ConvertFromMap returns a new slice with elements transformed by the given function with another type.
+func ConvertFromMap[K comparable, T1, T2 any](input map[K]T1, transform func(K, T1) T2) []T2 {
+	out := make([]T2, 0, len(input))
+	for k, v := range input {
+		out = append(out, transform(k, v))
+	}
+	return out
+}
+
+// ConvertFromMapWithErr returns a new slice with elements transformed by the given function with another type.
+func ConvertFromMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(K, T1) (T2, error)) ([]T2, error) {
+	out := make([]T2, 0, len(input))
+	for k, v := range input {
+		res, err := transform(k, v)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, res)
+	}
+	return out, nil
+}
+
+// ConvertToMap returns a new map with elements transformed by the given function with another type.
+func ConvertToMap[T1 any, K comparable, T2 any](input []T1, transform func(T1) (K, T2)) map[K]T2 {
+	out := make(map[K]T2, len(input))
+	for _, e := range input {
+		k, v := transform(e)
+		out[k] = v
+	}
+	return out
+}
+
+// ConvertToMapWithErr returns a new map with elements transformed by the given function with another type.
+func ConvertToMapWithErr[T1 any, K comparable, T2 any](input []T1, transform func(T1) (K, T2, error)) (map[K]T2, error) {
+	out := make(map[K]T2, len(input))
+	for _, e := range input {
+		k, v, err := transform(e)
+		if err != nil {
+			return nil, err
+		}
+		out[k] = v
+	}
+	return out, nil
+}
+
 // FilterMap returns a new map with elements filtered by the given filter function.
 func FilterMap[K comparable, T any](input map[K]T, filter func(K, T) bool) map[K]T {
 	out := make(map[K]T, len(input))

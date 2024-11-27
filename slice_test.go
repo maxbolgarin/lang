@@ -160,6 +160,72 @@ func TestConvertMapWithErr(t *testing.T) {
 	}
 }
 
+func TestConvertFromMap(t *testing.T) {
+	inputMap := map[string]int{"a": 1, "b": 2, "c": 3}
+	expectedResult := []int{10, 20, 30}
+	result := lang.ConvertFromMap(inputMap, func(k string, v int) int {
+		return v * 10
+	})
+	sort.Ints(result)
+	if !reflect.DeepEqual(expectedResult, result) {
+		t.Fatalf("Expected %v but got %v", expectedResult, result)
+	}
+}
+
+func TestConvertFromMapWithErr(t *testing.T) {
+	inputMap := map[string]int{"a": 1, "b": 2, "c": 3}
+	expectedResult := []int{10, 20, 30}
+	result, err := lang.ConvertFromMapWithErr(inputMap, func(k string, v int) (int, error) {
+		return v * 10, nil
+	})
+	if err != nil {
+		t.Fatalf("Expected no error but got %v", err)
+	}
+	sort.Ints(result)
+	if !reflect.DeepEqual(expectedResult, result) {
+		t.Fatalf("Expected %v but got %v", expectedResult, result)
+	}
+
+	_, err = lang.ConvertFromMapWithErr(inputMap, func(k string, v int) (int, error) {
+		return v * 10, errors.New("some error")
+	})
+	if err == nil {
+		t.Fatalf("Expected error but got %v", err)
+	}
+}
+
+func TestConvertToMap(t *testing.T) {
+	inputSlice := []int{1, 2, 3, 4, 5}
+	expectedResult := map[string]int{"1": 10, "2": 20, "3": 30, "4": 40, "5": 50}
+	result := lang.ConvertToMap(inputSlice, func(i int) (string, int) {
+		return strconv.Itoa(i), i * 10
+	})
+	if !reflect.DeepEqual(expectedResult, result) {
+		t.Fatalf("Expected %v but got %v", expectedResult, result)
+	}
+}
+
+func TestConvertToMapWithErr(t *testing.T) {
+	inputSlice := []int{1, 2, 3, 4, 5}
+	expectedResult := map[string]int{"1": 10, "2": 20, "3": 30, "4": 40, "5": 50}
+	result, err := lang.ConvertToMapWithErr(inputSlice, func(i int) (string, int, error) {
+		return strconv.Itoa(i), i * 10, nil
+	})
+	if err != nil {
+		t.Fatalf("Expected no error but got %v", err)
+	}
+	if !reflect.DeepEqual(expectedResult, result) {
+		t.Fatalf("Expected %v but got %v", expectedResult, result)
+	}
+
+	_, err = lang.ConvertToMapWithErr(inputSlice, func(i int) (string, int, error) {
+		return strconv.Itoa(i), i * 10, errors.New("some error")
+	})
+	if err == nil {
+		t.Fatalf("Expected error but got %v", err)
+	}
+}
+
 func TestFilterMap(t *testing.T) {
 	input := map[string]int{"a": 1, "b": 2, "c": 3}
 	expected := map[string]int{"b": 2}
