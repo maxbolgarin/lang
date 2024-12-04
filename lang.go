@@ -107,6 +107,27 @@ func If[T any](cond bool, ifTrue, ifFalse T) T {
 	return ifFalse
 }
 
+// IfF executes the function if the condition is true.
+//
+// IfF(true, func() { println("foo") })  // foo
+// IfF(false, func() { println("foo") }) // nothing
+func IfF(cond bool, f func()) {
+	if cond {
+		f()
+	}
+}
+
+// IfV executes the function if the value is not zero.
+//
+//	a := IfV(1, func() { println("foo") })  // foo
+//	b := IfV(0, func() { println("foo") })  // nothing
+func IfV[T comparable](v T, f func()) {
+	var zero T
+	if v != zero {
+		f()
+	}
+}
+
 // GetWithSep returns the value (first argument) with the separator (second argument),
 // if the separator does not exist in the last index of the value.
 //

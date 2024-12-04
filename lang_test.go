@@ -215,6 +215,48 @@ func TestIf(t *testing.T) {
 	}
 }
 
+func TestIfF(t *testing.T) {
+	var a string
+	lang.IfF(true, func() { a = "foo" })
+	if a != "foo" {
+		t.Errorf("expected %q but got %q", "foo", a)
+	}
+
+	var b string
+	lang.IfF(false, func() { b = "foo" })
+	if b != "" {
+		t.Errorf("expected %q but got %q", "", b)
+	}
+}
+
+func TestIfV(t *testing.T) {
+	var a string
+	lang.IfV("0", func() { a = "foo" })
+	if a != "foo" {
+		t.Errorf("expected %q but got %q", "foo", a)
+	}
+
+	var b string
+	lang.IfV("", func() { b = "foo" })
+	if b != "" {
+		t.Errorf("expected %q but got %q", "", b)
+	}
+
+	var aa string
+	ptr := &a
+	lang.IfV(ptr, func() { aa = "foo" })
+	if aa != "foo" {
+		t.Errorf("expected %q but got %q", "foo", aa)
+	}
+
+	var bb string
+	ptr = nil
+	lang.IfV(ptr, func() { bb = "foo" })
+	if bb != "" {
+		t.Errorf("expected %q but got %q", "", bb)
+	}
+}
+
 func TestCheckSlice(t *testing.T) {
 	a := []string{}
 	b := []string{"foo", "bar"}
