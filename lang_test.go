@@ -2,6 +2,7 @@ package lang_test
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -399,5 +400,199 @@ func TestAppendIfAny(t *testing.T) {
 	f = lang.AppendIfAny(b)
 	if !reflect.DeepEqual(f, b) {
 		t.Errorf("expected %v but got %v", b, f)
+	}
+}
+
+func TestConvertValue(t *testing.T) {
+	t.Run("int to string", func(t *testing.T) {
+		input := 42
+		expected := "42"
+		result := lang.ConvertValue(input, strconv.Itoa)
+		if result != expected {
+			t.Errorf("ConvertValue(%v, strconv.Itoa) = %v, want %v", input, result, expected)
+		}
+	})
+
+	t.Run("string to int", func(t *testing.T) {
+		input := "42"
+		expected := 42
+		result := lang.ConvertValue(input, func(s string) int {
+			v, _ := strconv.Atoi(s)
+			return v
+		})
+		if result != expected {
+			t.Errorf("ConvertValue(%v, func) = %v, want %v", input, result, expected)
+		}
+	})
+
+	t.Run("struct to map", func(t *testing.T) {
+		type Person struct {
+			Name string
+			Age  int
+		}
+		input := Person{Name: "Alice", Age: 30}
+		expected := map[string]interface{}{"name": "Alice", "age": 30}
+
+		result := lang.ConvertValue(input, func(p Person) map[string]interface{} {
+			return map[string]interface{}{
+				"name": p.Name,
+				"age":  p.Age,
+			}
+		})
+
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("ConvertValue(%v, func) = %v, want %v", input, result, expected)
+		}
+	})
+
+	t.Run("identity function", func(t *testing.T) {
+		input := "unchanged"
+		expected := "unchanged"
+		result := lang.ConvertValue(input, func(s string) string { return s })
+		if result != expected {
+			t.Errorf("ConvertValue(%v, func) = %v, want %v", input, result, expected)
+		}
+	})
+}
+
+func TestCheckIndex_EdgeCases(t *testing.T) {
+	t.Run("NegativeIndex", func(t *testing.T) {
+		s := []string{"foo", "bar"}
+		val, ok := lang.CheckIndex(s, -1)
+		if ok || val != "" {
+			t.Errorf("Expected (empty, false) for negative index, got (%v, %v)", val, ok)
+		}
+	})
+}
+
+func TestIfF_NilFunction(t *testing.T) {
+	// This test just verifies no panic occurs
+	lang.IfF(true, nil)
+	lang.IfF(false, nil)
+}
+
+func TestIfV_NilFunction(t *testing.T) {
+	// This test just verifies no panic occurs
+	val := "test"
+	lang.IfV(val, nil)
+
+	var empty string
+	lang.IfV(empty, nil)
+}
+
+func TestCheckMapSingle_NilMap(t *testing.T) {
+	var nilMap map[string]int
+	result := lang.CheckMapSingle(nilMap, "key", 42)
+
+	if result == nil {
+		t.Error("Expected initialized map, got nil")
+	}
+
+	if val, exists := result["key"]; !exists || val != 42 {
+		t.Errorf("Expected map with {'key': 42}, got %v", result)
+	}
+}
+
+func TestMaxLen_NegativeMax(t *testing.T) {
+	s := []string{"foo", "bar", "baz"}
+	result := lang.MaxLen(s, -5)
+
+	if len(result) != 0 {
+		t.Errorf("Expected empty slice for negative max, got %v", result)
+	}
+}
+
+func TestAppendIfAll_NilSlice(t *testing.T) {
+	var nilSlice []string
+	result := lang.AppendIfAll(nilSlice, "foo", "bar")
+
+	expected := []string{"foo", "bar"}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+
+	// Also test with a zero value in the arguments
+	result = lang.AppendIfAll(nilSlice, "foo", "")
+	if len(result) != 0 {
+		t.Errorf("Expected empty slice when one argument is zero, got %v", result)
+	}
+}
+
+func TestAppendIfAny_NilSlice(t *testing.T) {
+	var nilSlice []string
+	result := lang.AppendIfAny(nilSlice, "foo", "bar")
+
+	expected := []string{"foo", "bar"}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+
+	// Also test with a zero value in the arguments
+	result = lang.AppendIfAny(nilSlice, "foo", "")
+	expected = []string{"foo"}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
+
+func TestConvertValue_NilFunction(t *testing.T) {
+	var nilFunc func(int) string
+	result := lang.ConvertValue(42, nilFunc)
+
+	if result != "" {
+		t.Errorf("Expected empty string for nil function, got %v", result)
+	}
+}
+
+// Add test cases to verify fixes for pointer and nil handling
+
+func TestPtr_Consistency(t *testing.T) {
+	val := "test"
+	ptr := lang.Ptr(val)
+
+	if *ptr != val {
+		t.Errorf("Expected pointer to %v, got pointer to %v", val, *ptr)
+	}
+
+	// Verify that modifying original doesn't affect pointer value
+	val = "changed"
+	if *ptr == val {
+		t.Errorf("Expected pointer to keep original value, got %v", *ptr)
+	}
+}
+
+func TestCheckPtr_EdgeCases(t *testing.T) {
+	// Already covered in main tests, but add explicit nil test
+	var nilPtr *string
+	result := lang.CheckPtr(nilPtr, "default")
+	if result != "default" {
+		t.Errorf("Expected default value for nil pointer, got %v", result)
+	}
+}
+
+func TestDeref_Consistency(t *testing.T) {
+	// Already covered in main tests, but add explicit check
+	val := 42
+	ptr := &val
+	result := lang.Deref(ptr)
+
+	if result != val {
+		t.Errorf("Expected %v, got %v", val, result)
+	}
+
+	// Check nil deref
+	var nilPtr *int
+	zeroResult := lang.Deref(nilPtr)
+	if zeroResult != 0 {
+		t.Errorf("Expected 0 for nil pointer deref, got %v", zeroResult)
+	}
+}
+
+func TestIndex_NegativeIndex(t *testing.T) {
+	s := []string{"foo", "bar"}
+	result := lang.Index(s, -1)
+
+	if result != "" {
+		t.Errorf("Expected empty string for negative index, got %v", result)
 	}
 }

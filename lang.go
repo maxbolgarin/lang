@@ -55,7 +55,7 @@ func Deref[T any](v *T) T {
 //
 //	a := time.Time{}
 //	b := time.Now()
-//	c := CheckPtr(a, b)  // c == time.Now()
+//	c := CheckTime(a, b)  // c == time.Now()
 func CheckTime(v1 time.Time, v2 time.Time) time.Time {
 	if !v1.IsZero() {
 		return v1
@@ -69,7 +69,7 @@ func CheckTime(v1 time.Time, v2 time.Time) time.Time {
 //	b, ok := CheckIndex(a, 2) // b == 3 && ok == true
 //	c, ok := CheckIndex(a, 4) // c == 0 && ok == false
 func CheckIndex[T any](s []T, index int) (T, bool) {
-	if len(s) <= index {
+	if index < 0 || len(s) <= index {
 		var empty T
 		return empty, false
 	}
@@ -112,7 +112,7 @@ func If[T any](cond bool, ifTrue, ifFalse T) T {
 // IfF(true, func() { println("foo") })  // foo
 // IfF(false, func() { println("foo") }) // nothing
 func IfF(cond bool, f func()) {
-	if cond {
+	if cond && f != nil {
 		f()
 	}
 }
@@ -123,7 +123,7 @@ func IfF(cond bool, f func()) {
 //	b := IfV(0, func() { println("foo") })  // nothing
 func IfV[T comparable](v T, f func()) {
 	var zero T
-	if v != zero {
+	if v != zero && f != nil {
 		f()
 	}
 }
@@ -189,6 +189,10 @@ func CheckMapSingle[K comparable, V any](m map[K]V, k K, v V) map[K]V {
 	if len(m) > 0 {
 		return m
 	}
+	// Initialize map if nil to prevent panic
+	if m == nil {
+		m = make(map[K]V)
+	}
 	m[k] = v
 	return m
 }
@@ -212,6 +216,9 @@ func IsFound[T comparable](s []T, v T) bool {
 //	a := []int{1, 2, 3}
 //	b := MaxLen(a, 2) // b == [1, 2]
 func MaxLen[T any](s []T, max int) []T {
+	if max < 0 {
+		max = 0
+	}
 	if len(s) <= max {
 		return s
 	}
@@ -229,6 +236,9 @@ func MaxLen[T any](s []T, max int) []T {
 func AppendIfAll[T comparable](s []T, v ...T) []T {
 	if len(v) == 0 {
 		return s
+	}
+	if s == nil {
+		s = []T{}
 	}
 	var zero T
 	for _, e := range v {
@@ -251,6 +261,9 @@ func AppendIfAny[T comparable](s []T, v ...T) []T {
 	if len(v) == 0 {
 		return s
 	}
+	if s == nil {
+		s = []T{}
+	}
 	var zero T
 	for _, e := range v {
 		if e != zero {
@@ -258,4 +271,16 @@ func AppendIfAny[T comparable](s []T, v ...T) []T {
 		}
 	}
 	return s
+}
+
+// ConvertValue converts a value to a constant type.
+//
+//	a := 1
+//	b := ConvertValue(a, func(a int) string { return strconv.Itoa(a) }) // b == "1"
+func ConvertValue[T, K any](v T, f func(T) K) K {
+	if f == nil {
+		var zero K
+		return zero
+	}
+	return f(v)
 }
