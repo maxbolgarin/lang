@@ -1,8 +1,10 @@
 package lang_test
 
 import (
+	"errors"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -595,4 +597,248 @@ func TestIndex_NegativeIndex(t *testing.T) {
 	if result != "" {
 		t.Errorf("Expected empty string for negative index, got %v", result)
 	}
+}
+
+func TestWrap(t *testing.T) {
+	t.Run("nil error", func(t *testing.T) {
+		err := lang.Wrap(nil, "context message")
+		if err != nil {
+			t.Errorf("Expected nil error, got %v", err)
+		}
+	})
+
+	t.Run("non-nil error", func(t *testing.T) {
+		original := errors.New("original error")
+		wrapped := lang.Wrap(original, "context message")
+
+		if wrapped == nil {
+			t.Fatal("Expected wrapped error, got nil")
+		}
+
+		if !strings.Contains(wrapped.Error(), "context message") {
+			t.Errorf("Expected error to contain context message, got %v", wrapped.Error())
+		}
+
+		if !strings.Contains(wrapped.Error(), "original error") {
+			t.Errorf("Expected error to contain original message, got %v", wrapped.Error())
+		}
+
+		// Test unwrapping
+		unwrapped := errors.Unwrap(wrapped)
+		if unwrapped != original {
+			t.Errorf("Expected unwrapped error to be original, got %v", unwrapped)
+		}
+	})
+}
+
+func TestJoinErrors(t *testing.T) {
+	t.Run("all nil", func(t *testing.T) {
+		err := lang.JoinErrors(nil, nil)
+		if err != nil {
+			t.Errorf("Expected nil error, got %v", err)
+		}
+	})
+
+	t.Run("some nil", func(t *testing.T) {
+		err1 := errors.New("error 1")
+		err := lang.JoinErrors(err1, nil)
+
+		if err == nil {
+			t.Fatal("Expected non-nil error, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "error 1") {
+			t.Errorf("Expected error to contain 'error 1', got %v", err.Error())
+		}
+	})
+
+	t.Run("multiple errors", func(t *testing.T) {
+		err1 := errors.New("error 1")
+		err2 := errors.New("error 2")
+		err := lang.JoinErrors(err1, err2)
+
+		if err == nil {
+			t.Fatal("Expected non-nil error, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "error 1") {
+			t.Errorf("Expected error to contain 'error 1', got %v", err.Error())
+		}
+
+		if !strings.Contains(err.Error(), "error 2") {
+			t.Errorf("Expected error to contain 'error 2', got %v", err.Error())
+		}
+
+		if !strings.Contains(err.Error(), ";") {
+			t.Errorf("Expected error to contain separator, got %v", err.Error())
+		}
+	})
+}
+
+func TestTruncateString(t *testing.T) {
+	t.Run("short string", func(t *testing.T) {
+		s := "hello"
+		result := lang.TruncateString(s, 10)
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("exact length", func(t *testing.T) {
+		s := "hello"
+		result := lang.TruncateString(s, 5)
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("truncated with default ellipsis", func(t *testing.T) {
+		s := "hello world"
+		result := lang.TruncateString(s, 5)
+		if result != "hello..." {
+			t.Errorf("Expected %q, got %q", "hello...", result)
+		}
+	})
+
+	t.Run("truncated with custom ellipsis", func(t *testing.T) {
+		s := "hello world"
+		result := lang.TruncateString(s, 5, "…")
+		if result != "hello…" {
+			t.Errorf("Expected %q, got %q", "hello…", result)
+		}
+	})
+
+	t.Run("negative length", func(t *testing.T) {
+		s := "hello"
+		result := lang.TruncateString(s, -1)
+		if result != "" {
+			t.Errorf("Expected empty string, got %q", result)
+		}
+	})
+}
+
+func TestRetry(t *testing.T) {
+	t.Run("success on first attempt", func(t *testing.T) {
+		attempts := 0
+		result, err := lang.Retry(3, func() (string, error) {
+			attempts++
+			return "success", nil
+		})
+
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if result != "success" {
+			t.Errorf("Expected 'success', got %q", result)
+		}
+
+		if attempts != 1 {
+			t.Errorf("Expected 1 attempt, got %d", attempts)
+		}
+	})
+
+	t.Run("success after failures", func(t *testing.T) {
+		attempts := 0
+		result, err := lang.Retry(3, func() (string, error) {
+			attempts++
+			if attempts < 2 {
+				return "", errors.New("temporary error")
+			}
+			return "success", nil
+		})
+
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if result != "success" {
+			t.Errorf("Expected 'success', got %q", result)
+		}
+
+		if attempts != 2 {
+			t.Errorf("Expected 2 attempts, got %d", attempts)
+		}
+	})
+
+	t.Run("failure after max attempts", func(t *testing.T) {
+		attempts := 0
+		result, err := lang.Retry(3, func() (string, error) {
+			attempts++
+			return "", errors.New("persistent error")
+		})
+
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "failed after 3 attempts") {
+			t.Errorf("Expected error to mention attempts, got %v", err.Error())
+		}
+
+		if !strings.Contains(err.Error(), "persistent error") {
+			t.Errorf("Expected error to contain original message, got %v", err.Error())
+		}
+
+		if result != "" {
+			t.Errorf("Expected empty result, got %q", result)
+		}
+
+		if attempts != 3 {
+			t.Errorf("Expected 3 attempts, got %d", attempts)
+		}
+	})
+}
+
+func TestRunWithTimeout(t *testing.T) {
+	t.Run("completes before timeout", func(t *testing.T) {
+		result, err := lang.RunWithTimeout(100*time.Millisecond, func() (string, error) {
+			return "success", nil
+		})
+
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		if result != "success" {
+			t.Errorf("Expected 'success', got %q", result)
+		}
+	})
+
+	t.Run("returns error before timeout", func(t *testing.T) {
+		result, err := lang.RunWithTimeout(100*time.Millisecond, func() (string, error) {
+			return "", errors.New("operation error")
+		})
+
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+
+		if err.Error() != "operation error" {
+			t.Errorf("Expected 'operation error', got %q", err.Error())
+		}
+
+		if result != "" {
+			t.Errorf("Expected empty result, got %q", result)
+		}
+	})
+
+	t.Run("times out", func(t *testing.T) {
+		result, err := lang.RunWithTimeout(50*time.Millisecond, func() (string, error) {
+			time.Sleep(100 * time.Millisecond)
+			return "success", nil
+		})
+
+		if err == nil {
+			t.Error("Expected error, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "timed out") {
+			t.Errorf("Expected timeout error, got %q", err.Error())
+		}
+
+		if result != "" {
+			t.Errorf("Expected empty result, got %q", result)
+		}
+	})
 }

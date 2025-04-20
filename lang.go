@@ -1,7 +1,13 @@
 // Package lang provides useful generic oneliners to work with variables and pointers.
 package lang
 
-import "time"
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"sync"
+	"time"
+)
 
 // Ptr returns a pointer to a provided argument. It is useful to get an address of a literal.
 //
@@ -283,4 +289,100 @@ func ConvertValue[T, K any](v T, f func(T) K) K {
 		return zero
 	}
 	return f(v)
+}
+
+// WrapError adds a context message to an error.
+//
+//	err := SomeFunction()
+//	if err != nil {
+//	    return Wrap(err, "failed to execute SomeFunction")
+//	}
+func Wrap(err error, message string) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%s: %w", message, err)
+}
+
+// JoinErrors combines multiple errors into a single error.
+//
+//	err1 := SomeFunction1()
+//	err2 := SomeFunction2()
+//	if err := JoinErrors(err1, err2); err != nil {
+//	    return err
+//	}
+func JoinErrors(errs ...error) error {
+	var nonNilErrs []string
+	for _, err := range errs {
+		if err != nil {
+			nonNilErrs = append(nonNilErrs, err.Error())
+		}
+	}
+	if len(nonNilErrs) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(nonNilErrs, "; "))
+}
+
+// TruncateString truncates a string to a maximum length and adds an ellipsis if necessary.
+//
+//	s := "Hello, world!"
+//	t := TruncateString(s, 5) // t == "Hello..."
+func TruncateString(s string, maxLen int, ellipsis ...string) string {
+	if maxLen <= 0 {
+		return ""
+	}
+	if len(s) <= maxLen {
+		return s
+	}
+	if len(ellipsis) > 0 {
+		return s[:maxLen] + ellipsis[0]
+	}
+	return s[:maxLen] + "..."
+}
+
+// Retry attempts to execute a function until it succeeds or reaches max attempts.
+//
+//	result, err := Retry(3, func() (string, error) {
+//	    return CallExternalAPI()
+//	})
+func Retry[T any](maxAttempts int, f func() (T, error)) (T, error) {
+	var lastErr error
+	for i := 0; i < maxAttempts; i++ {
+		result, err := f()
+		if err == nil {
+			return result, nil
+		}
+		lastErr = err
+	}
+	var zero T
+	return zero, fmt.Errorf("failed after %d attempts: %w", maxAttempts, lastErr)
+}
+
+// RunWithTimeout runs a function with a timeout.
+//
+//	result, err := RunWithTimeout(time.Second, func() (string, error) {
+//	    return SlowOperation()
+//	})
+func RunWithTimeout[T any](timeout time.Duration, f func() (T, error)) (T, error) {
+	var result T
+	var err error
+	var wg sync.WaitGroup
+
+	done := make(chan struct{})
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		result, err = f()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return result, err
+	case <-time.After(timeout):
+		var zero T
+		return zero, errors.New("operation timed out")
+	}
 }
