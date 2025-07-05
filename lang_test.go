@@ -250,6 +250,30 @@ func TestIfF(t *testing.T) {
 	if b != "" {
 		t.Errorf("expected %q but got %q", "", b)
 	}
+
+	var c string
+	lang.IfF(true, func() { c = "foo" }, func() { c = "bar" })
+	if c != "foo" {
+		t.Errorf("expected %q but got %q", "foo", c)
+	}
+
+	var d string
+	lang.IfF(false, func() { d = "foo" }, func() { d = "bar" })
+	if d != "bar" {
+		t.Errorf("expected %q but got %q", "bar", d)
+	}
+
+	var e string
+	lang.IfF(false, func() { e = "foo" }, func() { e = "bar" })
+	if e != "bar" {
+		t.Errorf("expected %q but got %q", "bar", e)
+	}
+
+	var f string
+	lang.IfF(false, func() { f = "foo" }, func() { f = "bar" }, func() { f = "baz" })
+	if f != "bar" {
+		t.Errorf("expected %q but got %q", "bar", f)
+	}
 }
 
 func TestIfV(t *testing.T) {
@@ -277,6 +301,18 @@ func TestIfV(t *testing.T) {
 	lang.IfV(ptr, func() { bb = "foo" })
 	if bb != "" {
 		t.Errorf("expected %q but got %q", "", bb)
+	}
+
+	var cc string
+	lang.IfV(ptr, func() { cc = "foo" }, func() { cc = "bar" })
+	if cc != "bar" {
+		t.Errorf("expected %q but got %q", "bar", cc)
+	}
+
+	var dd string
+	lang.IfV(ptr, func() { dd = "foo" }, func() { dd = "bar" }, func() { dd = "baz" })
+	if dd != "bar" {
+		t.Errorf("expected %q but got %q", "bar", dd)
 	}
 }
 

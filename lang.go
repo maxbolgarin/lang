@@ -131,9 +131,13 @@ func If[T any](cond bool, ifTrue, ifFalse T) T {
 //
 // IfF(true, func() { println("foo") })  // foo
 // IfF(false, func() { println("foo") }) // nothing
-func IfF(cond bool, f func()) {
+// IfF(false, func() { println("foo") }, func() { println("bar") }) // bar
+func IfF(cond bool, f func(), fFalse ...func()) {
 	if cond && f != nil {
 		f()
+	}
+	if !cond && len(fFalse) > 0 && fFalse[0] != nil {
+		fFalse[0]()
 	}
 }
 
@@ -141,10 +145,14 @@ func IfF(cond bool, f func()) {
 //
 //	a := IfV(1, func() { println("foo") })  // foo
 //	b := IfV(0, func() { println("foo") })  // nothing
-func IfV[T comparable](v T, f func()) {
+//	c := IfV(0, func() { println("foo") }, func() { println("bar") }) // bar
+func IfV[T comparable](v T, f func(), fFalse ...func()) {
 	var zero T
 	if v != zero && f != nil {
 		f()
+	}
+	if v == zero && len(fFalse) > 0 && fFalse[0] != nil {
+		fFalse[0]()
 	}
 }
 
