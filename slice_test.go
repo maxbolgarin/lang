@@ -3290,3 +3290,79 @@ func TestSlice_EdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func TestIntersect_BothOptimizationBranches(t *testing.T) {
+	// Test that both optimization branches (len(a) <= len(b) and len(a) > len(b))
+	// produce the same results
+	testCases := []struct {
+		name string
+		set1 []int
+		set2 []int
+		want []int
+	}{
+		{
+			name: "different sized sets",
+			set1: []int{1, 2, 3, 4, 5},
+			set2: []int{3, 4, 5, 6, 7, 8, 9, 10},
+			want: []int{3, 4, 5},
+		},
+		{
+			name: "with duplicates",
+			set1: []int{1, 2, 2, 3, 4, 5},
+			set2: []int{3, 3, 4, 5, 6, 7, 8, 9, 10},
+			want: []int{3, 4, 5},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test both orderings to ensure both optimization branches work correctly
+			result1 := lang.Intersect(tt.set1, tt.set2) // First branch if len(set1) <= len(set2)
+			result2 := lang.Intersect(tt.set2, tt.set1) // Second branch if len(set2) > len(set1)
+
+			// Convert to maps for comparison
+			map1 := make(map[int]bool)
+			for _, v := range result1 {
+				map1[v] = true
+			}
+
+			map2 := make(map[int]bool)
+			for _, v := range result2 {
+				map2[v] = true
+			}
+
+			wantMap := make(map[int]bool)
+			for _, v := range tt.want {
+				wantMap[v] = true
+			}
+
+			// Both results should have the same elements as expected
+			if len(result1) != len(tt.want) || len(result2) != len(tt.want) {
+				t.Errorf("Length mismatch: result1=%d, result2=%d, want=%d",
+					len(result1), len(result2), len(tt.want))
+			}
+
+			// Check that both results contain exactly the expected elements
+			for v := range wantMap {
+				if !map1[v] {
+					t.Errorf("result1 missing expected value %v", v)
+				}
+				if !map2[v] {
+					t.Errorf("result2 missing expected value %v", v)
+				}
+			}
+
+			for v := range map1 {
+				if !wantMap[v] {
+					t.Errorf("result1 contains unexpected value %v", v)
+				}
+			}
+
+			for v := range map2 {
+				if !wantMap[v] {
+					t.Errorf("result2 contains unexpected value %v", v)
+				}
+			}
+		})
+	}
+}

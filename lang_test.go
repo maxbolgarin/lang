@@ -773,6 +773,12 @@ func TestTruncateString(t *testing.T) {
 	})
 }
 
+type someEnum string
+
+func (s someEnum) String() string {
+	return string(s)
+}
+
 func TestString(t *testing.T) {
 	t.Run("nil input", func(t *testing.T) {
 		result := lang.String(nil)
@@ -803,9 +809,10 @@ func TestString(t *testing.T) {
 	})
 
 	t.Run("fmt.Stringer input", func(t *testing.T) {
-		result := lang.String(fmt.Stringer(nil))
-		if result != "" {
-			t.Errorf("Expected empty string for nil fmt.Stringer, got %q", result)
+		s := someEnum("foo")
+		result := lang.String(s)
+		if result != "foo" {
+			t.Errorf("Expected %q, got %q", "foo", result)
 		}
 	})
 
@@ -1182,8 +1189,6 @@ func TestS(t *testing.T) {
 		}
 	})
 }
-
-type someEnum string
 
 func TestType(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
