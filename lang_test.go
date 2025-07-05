@@ -54,6 +54,25 @@ func TestCheckPtr(t *testing.T) {
 	}
 }
 
+func TestCheckPtrs(t *testing.T) {
+	a := "foo"
+	if v := lang.CheckPtrs(&a, &a); v != &a {
+		t.Errorf("expected %v but got %v", &a, v)
+	}
+	if v := lang.CheckPtrs(nil, &a); v != &a {
+		t.Errorf("expected %v but got %v", &a, v)
+	}
+	if v := lang.CheckPtrs(&a, nil); v != &a {
+		t.Errorf("expected %v but got %v", &a, v)
+	}
+	if v := lang.CheckPtrs[any](nil, nil); v != nil {
+		t.Errorf("expected %v but got %v", nil, v)
+	}
+	if v := lang.CheckPtrs(&a, nil); v != &a {
+		t.Errorf("expected %v but got %v", &a, v)
+	}
+}
+
 func TestDeref(t *testing.T) {
 	a := 123
 	if v := lang.Deref[int](nil); v != 0 {

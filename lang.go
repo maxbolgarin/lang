@@ -44,6 +44,19 @@ func CheckPtr[T any](v1 *T, v2 T) T {
 	return v2
 }
 
+// CheckPtrs returns the first argument if it is not nil, else returns the second one.
+//
+//	a := ""
+//	b := "foo"
+//	c := CheckPtrs(&a, &b)  // c == &a
+//	d := CheckPtrs(nil, &b) // d == &b
+func CheckPtrs[T any](v1 *T, v2 *T) *T {
+	if v1 != nil {
+		return v1
+	}
+	return v2
+}
+
 // Deref returns dereference of the pointer if it is not nil, else returns the default value.
 //
 //	var a *int
