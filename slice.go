@@ -578,7 +578,7 @@ func Difference[T comparable](a, b []T) []T {
 	if a == nil {
 		return nil
 	}
-	if b == nil || len(b) == 0 {
+	if len(b) == 0 {
 		return Copy(a)
 	}
 
@@ -685,7 +685,7 @@ func ForEach[T any](s []T, f func(T)) {
 //
 //	allPositive := All([]int{1, 2, 3}, func(n int) bool { return n > 0 }) // allPositive == true
 func All[T any](s []T, predicate func(T) bool) bool {
-	if s == nil || len(s) == 0 {
+	if len(s) == 0 {
 		return true // Vacuously true
 	}
 

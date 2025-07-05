@@ -222,14 +222,14 @@ func IsFound[T comparable](s []T, v T) bool {
 //
 //	a := []int{1, 2, 3}
 //	b := MaxLen(a, 2) // b == [1, 2]
-func MaxLen[T any](s []T, max int) []T {
-	if max < 0 {
-		max = 0
+func MaxLen[T any](s []T, targetMax int) []T {
+	if targetMax < 0 {
+		targetMax = 0
 	}
-	if len(s) <= max {
+	if len(s) <= targetMax {
 		return s
 	}
-	return s[:max]
+	return s[:targetMax]
 }
 
 // AppendIfAll appends the value to the slice if it is not empty.
@@ -493,6 +493,8 @@ func Retry[T any](maxAttempts int, f func() (T, error)) (T, error) {
 	return zero, fmt.Errorf("failed after %d attempts: %w", maxAttempts, lastErr)
 }
 
+var ErrTimeout = errors.New("operation timed out")
+
 // RunWithTimeout runs a function with a timeout.
 //
 //	result, err := RunWithTimeout(time.Second, func() (string, error) {
@@ -517,6 +519,6 @@ func RunWithTimeout[T any](timeout time.Duration, f func() (T, error)) (T, error
 		return result, err
 	case <-time.After(timeout):
 		var zero T
-		return zero, errors.New("operation timed out")
+		return zero, ErrTimeout
 	}
 }
