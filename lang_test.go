@@ -1128,6 +1128,69 @@ func TestS(t *testing.T) {
 	})
 }
 
+type someEnum string
+
+func TestType(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := lang.Type[string](nil)
+		if result != "" {
+			t.Errorf("Expected empty string for nil, got %q", result)
+		}
+	})
+
+	t.Run("string", func(t *testing.T) {
+		result := lang.Type[string](123)
+		if result != "" {
+			t.Errorf("Expected %q, got %q", "123", result)
+		}
+	})
+
+	t.Run("int", func(t *testing.T) {
+		result := lang.Type[int](123)
+		if result != 123 {
+			t.Errorf("Expected %d, got %d", 123, result)
+		}
+	})
+
+	t.Run("bool", func(t *testing.T) {
+		result := lang.Type[bool](123)
+		if result != false {
+			t.Errorf("Expected %t, got %t", false, result)
+		}
+	})
+
+	t.Run("enum", func(t *testing.T) {
+		result := lang.Type[someEnum]("foo")
+		if result != "" {
+			t.Errorf("Expected %q, got %q", "", result)
+		}
+	})
+
+	t.Run("enum2", func(t *testing.T) {
+		var v someEnum = "foo"
+		result := lang.Type[string](v)
+		if result != "" {
+			t.Errorf("Expected %q, got %q", "", result)
+		}
+	})
+
+	t.Run("enum3", func(t *testing.T) {
+		var v any = someEnum("foo")
+		result := lang.Type[string](v)
+		if result != "" {
+			t.Errorf("Expected %q, got %q", "", result)
+		}
+	})
+
+	t.Run("enum4", func(t *testing.T) {
+		var v any = someEnum("foo")
+		result := lang.Type[someEnum](v)
+		if result != "foo" {
+			t.Errorf("Expected %q, got %q", "", result)
+		}
+	})
+}
+
 func TestRetry(t *testing.T) {
 	t.Run("success on first attempt", func(t *testing.T) {
 		attempts := 0

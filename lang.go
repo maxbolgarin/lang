@@ -455,6 +455,26 @@ func S(s any, maxLenRaw ...int) string {
 	return String(s, maxLenRaw...)
 }
 
+// Type returns the value of the target type if the value is not nil.
+//
+//	a := Type[string](123) // a == ""
+//	b := Type[string](nil) // b == ""
+//	c := Type[string]("foo") // c == "foo"
+//	d := Type[someEnum]("foo") // d == "" (type someEnum string) !!!
+//	var v any = someEnum("foo")
+//	e := Type[someEnum](v) // e == "foo" e.Type() == someEnum
+func Type[Target any](s any) Target {
+	var zero Target
+	if s == nil {
+		return zero
+	}
+	v, ok := s.(Target)
+	if !ok {
+		return zero
+	}
+	return v
+}
+
 // Retry attempts to execute a function until it succeeds or reaches max attempts.
 //
 //	result, err := Retry(3, func() (string, error) {
