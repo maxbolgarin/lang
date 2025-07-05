@@ -4,6 +4,7 @@ package lang
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -339,6 +340,119 @@ func TruncateString(s string, maxLen int, ellipsis ...string) string {
 		return s[:maxLen] + ellipsis[0]
 	}
 	return s[:maxLen]
+}
+
+// String returns the string representation of the value with the optional maximum length.
+//
+//	a := String("Hello") // a == "Hello"
+//	b := String(123) // b == "123"
+//	c := String(123.456) // c == "123.456"
+//	d := String(true) // d == "true"
+//	e := String(time.Now()) // e == "2021-01-01T00:00:00Z"
+//	f := String([]byte("Hello, world!")) // f == "Hello, world!"
+//	g := String([]byte("Hello, world!"), 5) // g == "Hello"
+//	h := String(nil, 5) // h == ""
+//	i := String(nil, 0) // i == ""
+//	j := String(nil, -1) // j == ""
+func String(s any, maxLenRaw ...int) string {
+	if s == nil {
+		return ""
+	}
+
+	var maxLen int
+	if len(maxLenRaw) > 0 {
+		maxLen = maxLenRaw[0]
+		if maxLen <= 0 {
+			return ""
+		}
+	}
+
+	switch v := s.(type) {
+	case string:
+		res := v
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case []byte:
+		res := string(v)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case []rune:
+		res := string(v)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case time.Time:
+		res := v.Format(time.RFC3339)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case fmt.Stringer:
+		res := v.String()
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case error:
+		res := v.Error()
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case int:
+		res := strconv.FormatInt(int64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case int8:
+		res := strconv.FormatInt(int64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case int16:
+		res := strconv.FormatInt(int64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case int32:
+		res := strconv.FormatInt(int64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case int64:
+		res := strconv.FormatInt(v, 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case uint:
+		res := strconv.FormatUint(uint64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case uint8:
+		res := strconv.FormatUint(uint64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case uint16:
+		res := strconv.FormatUint(uint64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case uint32:
+		res := strconv.FormatUint(uint64(v), 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case uint64:
+		res := strconv.FormatUint(v, 10)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case float32:
+		res := strconv.FormatFloat(float64(v), 'f', -1, 32)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case float64:
+		res := strconv.FormatFloat(v, 'f', -1, 64)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case bool:
+		res := strconv.FormatBool(v)
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	default:
+		res := fmt.Sprintf("%v", s)
+		return TruncateString(res, Check(maxLen, len(res)))
+	}
+}
+
+// S is a shortcut for [String].
+func S(s any, maxLenRaw ...int) string {
+	return String(s, maxLenRaw...)
 }
 
 // Retry attempts to execute a function until it succeeds or reaches max attempts.

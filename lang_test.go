@@ -2,6 +2,7 @@ package lang_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -713,6 +714,416 @@ func TestTruncateString(t *testing.T) {
 		result := lang.TruncateString(s, -1)
 		if result != "" {
 			t.Errorf("Expected empty string, got %q", result)
+		}
+	})
+}
+
+func TestString(t *testing.T) {
+	t.Run("nil input", func(t *testing.T) {
+		result := lang.String(nil)
+		if result != "" {
+			t.Errorf("Expected empty string for nil input, got %q", result)
+		}
+	})
+
+	t.Run("string input", func(t *testing.T) {
+		result := lang.String("hello")
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("[]byte input", func(t *testing.T) {
+		result := lang.String([]byte("hello"))
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("[]rune input", func(t *testing.T) {
+		result := lang.String([]rune("hello"))
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("fmt.Stringer input", func(t *testing.T) {
+		result := lang.String(fmt.Stringer(nil))
+		if result != "" {
+			t.Errorf("Expected empty string for nil fmt.Stringer, got %q", result)
+		}
+	})
+
+	t.Run("error input", func(t *testing.T) {
+		result := lang.String(errors.New("error"))
+		if result != "error" {
+			t.Errorf("Expected %q, got %q", "error", result)
+		}
+	})
+
+	t.Run("int types", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected string
+		}{
+			{"int", 123, "123"},
+			{"int8", int8(123), "123"},
+			{"int16", int16(123), "123"},
+			{"int32", int32(123), "123"},
+			{"int64", int64(123), "123"},
+			{"negative int", -123, "-123"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := lang.String(tt.input)
+				if result != tt.expected {
+					t.Errorf("Expected %q, got %q", tt.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("uint types", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected string
+		}{
+			{"uint", uint(123), "123"},
+			{"uint8", uint8(123), "123"},
+			{"uint16", uint16(123), "123"},
+			{"uint32", uint32(123), "123"},
+			{"uint64", uint64(123), "123"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := lang.String(tt.input)
+				if result != tt.expected {
+					t.Errorf("Expected %q, got %q", tt.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("float types", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected string
+		}{
+			{"float32", float32(123.456), "123.456"},
+			{"float64", float64(123.456), "123.456"},
+			{"float32 zero", float32(0), "0"},
+			{"float64 negative", float64(-123.456), "-123.456"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := lang.String(tt.input)
+				if result != tt.expected {
+					t.Errorf("Expected %q, got %q", tt.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("bool types", func(t *testing.T) {
+		result := lang.String(true)
+		if result != "true" {
+			t.Errorf("Expected %q, got %q", "true", result)
+		}
+
+		result = lang.String(false)
+		if result != "false" {
+			t.Errorf("Expected %q, got %q", "false", result)
+		}
+	})
+
+	t.Run("time.Time", func(t *testing.T) {
+		testTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+		result := lang.String(testTime)
+		expected := "2021-01-01T00:00:00Z"
+		if result != expected {
+			t.Errorf("Expected %q, got %q", expected, result)
+		}
+	})
+
+	t.Run("default case", func(t *testing.T) {
+		type customType struct {
+			Value string
+		}
+		input := customType{Value: "test"}
+		result := lang.String(input)
+		expected := "{test}"
+		if result != expected {
+			t.Errorf("Expected %q, got %q", expected, result)
+		}
+	})
+
+	t.Run("maxLen parameter", func(t *testing.T) {
+		t.Run("zero maxLen", func(t *testing.T) {
+			result := lang.String("hello", 0)
+			if result != "" {
+				t.Errorf("Expected empty string for maxLen=0, got %q", result)
+			}
+		})
+
+		t.Run("negative maxLen", func(t *testing.T) {
+			result := lang.String("hello", -1)
+			if result != "" {
+				t.Errorf("Expected empty string for negative maxLen, got %q", result)
+			}
+		})
+
+		t.Run("maxLen larger than string", func(t *testing.T) {
+			result := lang.String("hello", 10)
+			if result != "hello" {
+				t.Errorf("Expected %q, got %q", "hello", result)
+			}
+		})
+
+		t.Run("maxLen smaller than string", func(t *testing.T) {
+			result := lang.String("hello world", 5)
+			if result != "hello" {
+				t.Errorf("Expected %q, got %q", "hello", result)
+			}
+		})
+
+		t.Run("maxLen with []byte", func(t *testing.T) {
+			result := lang.String([]byte("hello world"), 5)
+			if result != "hello" {
+				t.Errorf("Expected %q, got %q", "hello", result)
+			}
+		})
+
+		t.Run("maxLen with int", func(t *testing.T) {
+			result := lang.String(123456, 3)
+			if result != "123" {
+				t.Errorf("Expected %q, got %q", "123", result)
+			}
+		})
+
+		t.Run("maxLen with time", func(t *testing.T) {
+			testTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+			result := lang.String(testTime, 10)
+			if result != "2021-01-01" {
+				t.Errorf("Expected %q, got %q", "2021-01-01", result)
+			}
+		})
+	})
+
+	t.Run("nil with maxLen", func(t *testing.T) {
+		result := lang.String(nil, 5)
+		if result != "" {
+			t.Errorf("Expected empty string for nil with maxLen, got %q", result)
+		}
+	})
+}
+
+func TestS(t *testing.T) {
+	t.Run("nil input", func(t *testing.T) {
+		result := lang.S(nil)
+		if result != "" {
+			t.Errorf("Expected empty string for nil input, got %q", result)
+		}
+	})
+
+	t.Run("string input", func(t *testing.T) {
+		result := lang.S("hello")
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("[]byte input", func(t *testing.T) {
+		result := lang.S([]byte("hello"))
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("[]rune input", func(t *testing.T) {
+		result := lang.S([]rune("hello"))
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
+		}
+	})
+
+	t.Run("fmt.Stringer input", func(t *testing.T) {
+		result := lang.S(fmt.Stringer(nil))
+		if result != "" {
+			t.Errorf("Expected empty string for nil fmt.Stringer, got %q", result)
+		}
+	})
+
+	t.Run("error input", func(t *testing.T) {
+		result := lang.S(errors.New("error"))
+		if result != "error" {
+			t.Errorf("Expected %q, got %q", "error", result)
+		}
+	})
+
+	t.Run("int types", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected string
+		}{
+			{"int", 123, "123"},
+			{"int8", int8(123), "123"},
+			{"int16", int16(123), "123"},
+			{"int32", int32(123), "123"},
+			{"int64", int64(123), "123"},
+			{"negative int", -123, "-123"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := lang.S(tt.input)
+				if result != tt.expected {
+					t.Errorf("Expected %q, got %q", tt.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("uint types", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected string
+		}{
+			{"uint", uint(123), "123"},
+			{"uint8", uint8(123), "123"},
+			{"uint16", uint16(123), "123"},
+			{"uint32", uint32(123), "123"},
+			{"uint64", uint64(123), "123"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := lang.S(tt.input)
+				if result != tt.expected {
+					t.Errorf("Expected %q, got %q", tt.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("float types", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			input    interface{}
+			expected string
+		}{
+			{"float32", float32(123.456), "123.456"},
+			{"float64", float64(123.456), "123.456"},
+			{"float32 zero", float32(0), "0"},
+			{"float64 negative", float64(-123.456), "-123.456"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := lang.S(tt.input)
+				if result != tt.expected {
+					t.Errorf("Expected %q, got %q", tt.expected, result)
+				}
+			})
+		}
+	})
+
+	t.Run("bool types", func(t *testing.T) {
+		result := lang.S(true)
+		if result != "true" {
+			t.Errorf("Expected %q, got %q", "true", result)
+		}
+
+		result = lang.S(false)
+		if result != "false" {
+			t.Errorf("Expected %q, got %q", "false", result)
+		}
+	})
+
+	t.Run("time.Time", func(t *testing.T) {
+		testTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+		result := lang.S(testTime)
+		expected := "2021-01-01T00:00:00Z"
+		if result != expected {
+			t.Errorf("Expected %q, got %q", expected, result)
+		}
+	})
+
+	t.Run("default case", func(t *testing.T) {
+		type customType struct {
+			Value string
+		}
+		input := customType{Value: "test"}
+		result := lang.S(input)
+		expected := "{test}"
+		if result != expected {
+			t.Errorf("Expected %q, got %q", expected, result)
+		}
+	})
+
+	t.Run("maxLen parameter", func(t *testing.T) {
+		t.Run("zero maxLen", func(t *testing.T) {
+			result := lang.S("hello", 0)
+			if result != "" {
+				t.Errorf("Expected empty string for maxLen=0, got %q", result)
+			}
+		})
+
+		t.Run("negative maxLen", func(t *testing.T) {
+			result := lang.S("hello", -1)
+			if result != "" {
+				t.Errorf("Expected empty string for negative maxLen, got %q", result)
+			}
+		})
+
+		t.Run("maxLen larger than string", func(t *testing.T) {
+			result := lang.S("hello", 10)
+			if result != "hello" {
+				t.Errorf("Expected %q, got %q", "hello", result)
+			}
+		})
+
+		t.Run("maxLen smaller than string", func(t *testing.T) {
+			result := lang.S("hello world", 5)
+			if result != "hello" {
+				t.Errorf("Expected %q, got %q", "hello", result)
+			}
+		})
+
+		t.Run("maxLen with []byte", func(t *testing.T) {
+			result := lang.S([]byte("hello world"), 5)
+			if result != "hello" {
+				t.Errorf("Expected %q, got %q", "hello", result)
+			}
+		})
+
+		t.Run("maxLen with int", func(t *testing.T) {
+			result := lang.S(123456, 3)
+			if result != "123" {
+				t.Errorf("Expected %q, got %q", "123", result)
+			}
+		})
+
+		t.Run("maxLen with time", func(t *testing.T) {
+			testTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+			result := lang.S(testTime, 10)
+			if result != "2021-01-01" {
+				t.Errorf("Expected %q, got %q", "2021-01-01", result)
+			}
+		})
+	})
+
+	t.Run("nil with maxLen", func(t *testing.T) {
+		result := lang.S(nil, 5)
+		if result != "" {
+			t.Errorf("Expected empty string for nil with maxLen, got %q", result)
 		}
 	})
 }
