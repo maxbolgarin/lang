@@ -7,13 +7,25 @@ import (
 	"time"
 )
 
-// Logger is an interface for logging panic stack trace and errors.
+// Logger is an interface for logging panic stack traces and errors.
+// It provides a method to log error messages with optional arguments.
 type Logger interface {
 	Error(msg string, args ...any)
 }
 
-// Go runs goroutine with recover. It will print stack trace and restart goroutine in case of panic.
-// If you want to run goroutine without restarting after panic, just use go func() with Recover.
+// Go runs a goroutine with automatic panic recovery and restart capability.
+// If the goroutine panics, it logs the stack trace and restarts the goroutine.
+// It includes rate limiting to prevent excessive restarts (max 60 per minute).
+// Use this when you want automatic recovery and restart after panics.
+//
+//	// Example usage:
+//	Go(logger, func() {
+//	    // Your goroutine code here
+//	    for {
+//	        // Do work that might panic
+//	        time.Sleep(time.Second)
+//	    }
+//	})
 func Go(l Logger, f func()) {
 	if f == nil {
 		return
@@ -62,7 +74,18 @@ func Go(l Logger, f func()) {
 	go foo()
 }
 
-// Recover should be used with defer to recover and log stack trace in case of panic.
+// Recover should be used with defer to recover from panics and log the stack trace.
+// It returns true if a panic was recovered, false otherwise.
+// Use this when you want to handle panics gracefully without stopping execution.
+//
+//	func riskyOperation() {
+//	    defer func() {
+//	        if Recover(logger) {
+//	            // Handle the panic case
+//	        }
+//	    }()
+//	    // Code that might panic
+//	}
 func Recover(l Logger) bool {
 	if err := recover(); err != nil {
 		printErrorWithStack(l, err)
@@ -71,7 +94,20 @@ func Recover(l Logger) bool {
 	return false
 }
 
-// RecoverWithErr should be used with defer to recover panic and return error from function without logging.
+// RecoverWithErr should be used with defer to recover from panics and convert them to errors.
+// It returns true if a panic was recovered, false otherwise.
+// The panic is converted to an error and stored in the provided error pointer.
+// Use this when you want to convert panics to errors without logging.
+//
+//	func riskyOperation() (err error) {
+//	    defer func() {
+//	        if RecoverWithErr(&err) {
+//	            // Panic was converted to error
+//	        }
+//	    }()
+//	    // Code that might panic
+//	    return nil
+//	}
 func RecoverWithErr(outerError *error) bool {
 	if panicErr := recover(); panicErr != nil {
 		if outerError != nil {
@@ -82,7 +118,20 @@ func RecoverWithErr(outerError *error) bool {
 	return false
 }
 
-// RecoverWithErrAndStack should be used with defer to recover panic and return error from function with logging stack.
+// RecoverWithErrAndStack should be used with defer to recover from panics, convert them to errors, and log the stack trace.
+// It returns true if a panic was recovered, false otherwise.
+// The panic is converted to an error and stored in the provided error pointer, and the stack trace is logged.
+// Use this when you want to convert panics to errors and also log the stack trace.
+//
+//	func riskyOperation() (err error) {
+//	    defer func() {
+//	        if RecoverWithErrAndStack(logger, &err) {
+//	            // Panic was converted to error and logged
+//	        }
+//	    }()
+//	    // Code that might panic
+//	    return nil
+//	}
 func RecoverWithErrAndStack(l Logger, outerError *error) bool {
 	if panicErr := recover(); panicErr != nil {
 		err := fmt.Errorf("%v", panicErr)
@@ -95,7 +144,21 @@ func RecoverWithErrAndStack(l Logger, outerError *error) bool {
 	return false
 }
 
-// RecoverWithHandler should be used with defer to recover and call provided handler func.
+// RecoverWithHandler should be used with defer to recover from panics and call a custom handler function.
+// It returns true if a panic was recovered, false otherwise.
+// The handler function is called with the panic value if a panic occurs.
+// Use this when you want custom handling of panics.
+//
+//	func riskyOperation() {
+//	    defer func() {
+//	        if RecoverWithHandler(func(panicValue any) {
+//	            fmt.Printf("Panic recovered: %v\n", panicValue)
+//	        }) {
+//	            // Panic was handled
+//	        }
+//	    }()
+//	    // Code that might panic
+//	}
 func RecoverWithHandler(handler func(err any)) bool {
 	if panicErr := recover(); panicErr != nil {
 		if handler != nil {
@@ -106,6 +169,8 @@ func RecoverWithHandler(handler func(err any)) bool {
 	return false
 }
 
+// printErrorWithStack logs an error with its stack trace using the provided logger.
+// This is a helper function used internally by other recovery functions.
 func printErrorWithStack(l Logger, err any) {
 	if l == nil {
 		return
@@ -114,12 +179,12 @@ func printErrorWithStack(l Logger, err any) {
 	l.Error(string(stack), "error", err) // build with -trimpath to avoid printing build path in trace
 }
 
-// DefaultIfPanic returns the result of the function, or the default value if the function panics.
+// DefaultIfPanic executes a function and returns its result, or returns a default value if the function panics.
+// This is useful for operations that might panic but you want to provide a fallback value.
 //
 //	result := DefaultIfPanic("default", func() string {
-//	    // operation that might panic
-//	    return "success"
-//	})
+//	    return riskyOperation() // might panic
+//	}) // result == "default" if riskyOperation panics, otherwise the actual result
 func DefaultIfPanic[T any](defaultValue T, f func() T) (result T) {
 	if f == nil {
 		return defaultValue

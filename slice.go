@@ -1,7 +1,12 @@
 package lang
 
-// SliceToMap returns a new map created calling a transform function on every element of slice,
-// function returns a key and an according value. Return empty key to pass iteration.
+// SliceToMap creates a map by transforming each element of a slice into a key-value pair.
+// The transform function should return a key and value for each element.
+//
+//	users := []User{{ID: 1, Name: "Alice"}, {ID: 2, Name: "Bob"}}
+//	userMap := SliceToMap(users, func(u User) (int, string) {
+//	    return u.ID, u.Name
+//	}) // userMap == map[int]string{1: "Alice", 2: "Bob"}
 func SliceToMap[T any, K comparable, V any](input []T, transform func(T) (K, V)) map[K]V {
 	if input == nil {
 		return make(map[K]V)
@@ -14,8 +19,13 @@ func SliceToMap[T any, K comparable, V any](input []T, transform func(T) (K, V))
 	return out
 }
 
-// SliceToMapByKey returns a new map created calling a transform function on every element of slice,
-// function returns a key and current element of slice becomes a value.
+// SliceToMapByKey creates a map by using a key function to generate keys from slice elements.
+// The elements themselves become the values in the resulting map.
+//
+//	users := []User{{ID: 1, Name: "Alice"}, {ID: 2, Name: "Bob"}}
+//	userMap := SliceToMapByKey(users, func(u User) int {
+//	    return u.ID
+//	}) // userMap == map[int]User{1: {ID: 1, Name: "Alice"}, 2: {ID: 2, Name: "Bob"}}
 func SliceToMapByKey[T any, K comparable](input []T, key func(T) K) map[K]T {
 	if input == nil {
 		return make(map[K]T)
@@ -23,15 +33,22 @@ func SliceToMapByKey[T any, K comparable](input []T, key func(T) K) map[K]T {
 	return SliceToMap(input, func(t T) (K, T) { return key(t), t })
 }
 
-// Mapping returns a new map created calling a transform function on every element of slice,
-// function returns a key and current element of slice becomes a value.
+// Mapping is an alias for SliceToMapByKey that creates a map by using a key function.
+//
+//	users := []User{{ID: 1, Name: "Alice"}, {ID: 2, Name: "Bob"}}
+//	userMap := Mapping(users, func(u User) int {
+//	    return u.ID
+//	}) // userMap == map[int]User{1: {ID: 1, Name: "Alice"}, 2: {ID: 2, Name: "Bob"}}
 func Mapping[T any, K comparable](input []T, key func(T) K) map[K]T {
 	return SliceToMapByKey(input, key)
 }
 
 // PairsToMap transforms a slice with pairs of elements into a map.
-// The first element of each pair is a key and the second is a value.
-// If the input slice has an odd number of elements, the last element is ignored.
+// The first element of each pair becomes the key, and the second becomes the value.
+// If the slice has an odd number of elements, the last element is ignored.
+//
+//	pairs := []string{"key1", "value1", "key2", "value2", "key3"}
+//	mapping := PairsToMap(pairs) // mapping == map[string]string{"key1": "value1", "key2": "value2"}
 func PairsToMap[T comparable](input []T) map[T]T {
 	if input == nil {
 		return make(map[T]T)
@@ -43,7 +60,10 @@ func PairsToMap[T comparable](input []T) map[T]T {
 	return out
 }
 
-// Filter returns a new slice with elements filtered by the given filter function.
+// Filter returns a new slice containing only the elements that satisfy the filter function.
+//
+//	numbers := []int{1, 2, 3, 4, 5, 6}
+//	evens := Filter(numbers, func(n int) bool { return n%2 == 0 }) // evens == []int{2, 4, 6}
 func Filter[T any](input []T, filter func(T) bool) []T {
 	if input == nil {
 		return nil
@@ -57,7 +77,10 @@ func Filter[T any](input []T, filter func(T) bool) []T {
 	return out
 }
 
-// Map returns a new slice with elements transformed by the given function with the same type.
+// Map transforms each element of a slice using the provided function and returns a new slice.
+//
+//	numbers := []int{1, 2, 3}
+//	doubled := Map(numbers, func(n int) int { return n * 2 }) // doubled == []int{2, 4, 6}
 func Map[T any](input []T, transform func(T) T) []T {
 	if input == nil {
 		return nil
@@ -84,7 +107,10 @@ func Reduce[T, K any](s []T, initial K, f func(K, T) K) K {
 	return result
 }
 
-// Convert returns a new slice with elements transformed by the given function with another type.
+// Convert transforms each element of a slice to a different type using the provided function.
+//
+//	numbers := []int{1, 2, 3}
+//	strings := Convert(numbers, func(n int) string { return strconv.Itoa(n) }) // strings == []string{"1", "2", "3"}
 func Convert[T, K any](input []T, transform func(T) K) []K {
 	if input == nil {
 		return nil
@@ -96,7 +122,13 @@ func Convert[T, K any](input []T, transform func(T) K) []K {
 	return out
 }
 
-// ConvertWithErr returns a new slice with elements transformed by the given function with another type.
+// ConvertWithErr transforms each element of a slice to a different type using the provided function.
+// Returns an error if any transformation fails.
+//
+//	strings := []string{"1", "2", "invalid"}
+//	numbers, err := ConvertWithErr(strings, func(s string) (int, error) {
+//	    return strconv.Atoi(s)
+//	}) // numbers == nil, err != nil
 func ConvertWithErr[T, K any](input []T, transform func(T) (K, error)) ([]K, error) {
 	if input == nil {
 		return nil, nil
@@ -112,7 +144,12 @@ func ConvertWithErr[T, K any](input []T, transform func(T) (K, error)) ([]K, err
 	return out, nil
 }
 
-// ConvertMap returns a new map with elements transformed by the given function with another type.
+// ConvertMap transforms each value in a map using the provided function while preserving keys.
+//
+//	ages := map[string]int{"Alice": 25, "Bob": 30}
+//	descriptions := ConvertMap(ages, func(age int) string {
+//	    return fmt.Sprintf("%d years old", age)
+//	}) // descriptions == map[string]string{"Alice": "25 years old", "Bob": "30 years old"}
 func ConvertMap[K comparable, T1, T2 any](input map[K]T1, transform func(T1) T2) map[K]T2 {
 	if input == nil {
 		return make(map[K]T2)
@@ -124,7 +161,13 @@ func ConvertMap[K comparable, T1, T2 any](input map[K]T1, transform func(T1) T2)
 	return out
 }
 
-// ConvertMapWithErr returns a new map with elements transformed by the given function with another type.
+// ConvertMapWithErr transforms each value in a map using the provided function while preserving keys.
+// Returns an error if any transformation fails.
+//
+//	stringNums := map[string]string{"a": "1", "b": "invalid"}
+//	numbers, err := ConvertMapWithErr(stringNums, func(s string) (int, error) {
+//	    return strconv.Atoi(s)
+//	}) // numbers == nil, err != nil
 func ConvertMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(T1) (T2, error)) (map[K]T2, error) {
 	if input == nil {
 		return make(map[K]T2), nil
@@ -140,7 +183,12 @@ func ConvertMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(
 	return out, nil
 }
 
-// ConvertFromMap returns a new slice with elements transformed by the given function with another type.
+// ConvertFromMap transforms each key-value pair in a map into a slice element.
+//
+//	ages := map[string]int{"Alice": 25, "Bob": 30}
+//	descriptions := ConvertFromMap(ages, func(name string, age int) string {
+//	    return fmt.Sprintf("%s is %d years old", name, age)
+//	}) // descriptions == []string{"Alice is 25 years old", "Bob is 30 years old"}
 func ConvertFromMap[K comparable, T1, T2 any](input map[K]T1, transform func(K, T1) T2) []T2 {
 	if input == nil {
 		return nil
@@ -152,7 +200,13 @@ func ConvertFromMap[K comparable, T1, T2 any](input map[K]T1, transform func(K, 
 	return out
 }
 
-// ConvertFromMapWithErr returns a new slice with elements transformed by the given function with another type.
+// ConvertFromMapWithErr transforms each key-value pair in a map into a slice element.
+// Returns an error if any transformation fails.
+//
+//	stringNums := map[string]string{"a": "1", "b": "invalid"}
+//	numbers, err := ConvertFromMapWithErr(stringNums, func(key string, val string) (int, error) {
+//	    return strconv.Atoi(val)
+//	}) // numbers == nil, err != nil
 func ConvertFromMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform func(K, T1) (T2, error)) ([]T2, error) {
 	if input == nil {
 		return nil, nil
@@ -168,7 +222,12 @@ func ConvertFromMapWithErr[K comparable, T1, T2 any](input map[K]T1, transform f
 	return out, nil
 }
 
-// ConvertToMap returns a new map with elements transformed by the given function with another type.
+// ConvertToMap transforms each element of a slice into a key-value pair for a map.
+//
+//	users := []User{{ID: 1, Name: "Alice"}, {ID: 2, Name: "Bob"}}
+//	userMap := ConvertToMap(users, func(u User) (int, string) {
+//	    return u.ID, u.Name
+//	}) // userMap == map[int]string{1: "Alice", 2: "Bob"}
 func ConvertToMap[T1 any, K comparable, T2 any](input []T1, transform func(T1) (K, T2)) map[K]T2 {
 	if input == nil {
 		return make(map[K]T2)
@@ -181,7 +240,14 @@ func ConvertToMap[T1 any, K comparable, T2 any](input []T1, transform func(T1) (
 	return out
 }
 
-// ConvertToMapWithErr returns a new map with elements transformed by the given function with another type.
+// ConvertToMapWithErr transforms each element of a slice into a key-value pair for a map.
+// Returns an error if any transformation fails.
+//
+//	strings := []string{"1", "2", "invalid"}
+//	numberMap, err := ConvertToMapWithErr(strings, func(s string) (string, int, error) {
+//	    num, err := strconv.Atoi(s)
+//	    return s, num, err
+//	}) // numberMap == nil, err != nil
 func ConvertToMapWithErr[T1 any, K comparable, T2 any](input []T1, transform func(T1) (K, T2, error)) (map[K]T2, error) {
 	if input == nil {
 		return make(map[K]T2), nil
@@ -197,7 +263,12 @@ func ConvertToMapWithErr[T1 any, K comparable, T2 any](input []T1, transform fun
 	return out, nil
 }
 
-// FilterMap returns a new map with elements filtered by the given filter function.
+// FilterMap returns a new map containing only the key-value pairs that satisfy the filter function.
+//
+//	ages := map[string]int{"Alice": 25, "Bob": 30, "Charlie": 17}
+//	adults := FilterMap(ages, func(name string, age int) bool {
+//	    return age >= 18
+//	}) // adults == map[string]int{"Alice": 25, "Bob": 30}
 func FilterMap[K comparable, T any](input map[K]T, filter func(K, T) bool) map[K]T {
 	if input == nil {
 		return make(map[K]T)
@@ -211,7 +282,11 @@ func FilterMap[K comparable, T any](input map[K]T, filter func(K, T) bool) map[K
 	return out
 }
 
-// Copy returns a copy of a provided slice.
+// Copy creates a shallow copy of a slice.
+//
+//	original := []int{1, 2, 3}
+//	copied := Copy(original) // copied == []int{1, 2, 3}
+//	original[0] = 99         // copied[0] is still 1
 func Copy[T any](input []T) []T {
 	if input == nil {
 		return nil
@@ -221,7 +296,11 @@ func Copy[T any](input []T) []T {
 	return out
 }
 
-// CopyMap returns a copy of a provided map.
+// CopyMap creates a shallow copy of a map.
+//
+//	original := map[string]int{"a": 1, "b": 2}
+//	copied := CopyMap(original) // copied == map[string]int{"a": 1, "b": 2}
+//	original["a"] = 99          // copied["a"] is still 1
 func CopyMap[K comparable, T any](input map[K]T) map[K]T {
 	if input == nil {
 		return make(map[K]T)
@@ -233,7 +312,10 @@ func CopyMap[K comparable, T any](input map[K]T) map[K]T {
 	return out
 }
 
-// WithoutEmpty returns a new slice without empty elements.
+// WithoutEmpty returns a new slice with all zero values removed.
+//
+//	mixed := []string{"hello", "", "world", ""}
+//	nonEmpty := WithoutEmpty(mixed) // nonEmpty == []string{"hello", "world"}
 func WithoutEmpty[T comparable](input []T) []T {
 	if input == nil {
 		return nil
@@ -248,7 +330,10 @@ func WithoutEmpty[T comparable](input []T) []T {
 	return out
 }
 
-// Keys returns a new slice with keys of a provided map.
+// Keys returns a slice containing all keys from a map.
+//
+//	mapping := map[string]int{"a": 1, "b": 2, "c": 3}
+//	keys := Keys(mapping) // keys == []string{"a", "b", "c"} (order may vary)
 func Keys[K comparable, T any](input map[K]T) []K {
 	if input == nil {
 		return nil
@@ -260,7 +345,12 @@ func Keys[K comparable, T any](input map[K]T) []K {
 	return out
 }
 
-// KeysIf returns a new slice with keys of a provided map filtered by the given filter function.
+// KeysIf returns a slice containing keys from a map that satisfy the filter function.
+//
+//	ages := map[string]int{"Alice": 25, "Bob": 30, "Charlie": 17}
+//	adultNames := KeysIf(ages, func(name string, age int) bool {
+//	    return age >= 18
+//	}) // adultNames == []string{"Alice", "Bob"} (order may vary)
 func KeysIf[K comparable, T any](input map[K]T, filter func(K, T) bool) []K {
 	if input == nil {
 		return nil
@@ -275,7 +365,10 @@ func KeysIf[K comparable, T any](input map[K]T, filter func(K, T) bool) []K {
 	return out
 }
 
-// Values returns a new slice with values of a provided map.
+// Values returns a slice containing all values from a map.
+//
+//	mapping := map[string]int{"a": 1, "b": 2, "c": 3}
+//	values := Values(mapping) // values == []int{1, 2, 3} (order may vary)
 func Values[K comparable, T any](input map[K]T) []T {
 	if input == nil {
 		return nil
@@ -287,7 +380,12 @@ func Values[K comparable, T any](input map[K]T) []T {
 	return out
 }
 
-// ValuesIf returns a new slice with values of a provided map filtered by the given filter function.
+// ValuesIf returns a slice containing values from a map that satisfy the filter function.
+//
+//	ages := map[string]int{"Alice": 25, "Bob": 30, "Charlie": 17}
+//	adultAges := ValuesIf(ages, func(name string, age int) bool {
+//	    return age >= 18
+//	}) // adultAges == []int{25, 30} (order may vary)
 func ValuesIf[K comparable, T any](input map[K]T, filter func(K, T) bool) []T {
 	if input == nil {
 		return nil
@@ -302,7 +400,10 @@ func ValuesIf[K comparable, T any](input map[K]T, filter func(K, T) bool) []T {
 	return out
 }
 
-// WithoutEmptyKeys returns a new map without empty keys.
+// WithoutEmptyKeys returns a new map with all entries that have zero-value keys removed.
+//
+//	mapping := map[string]int{"": 1, "a": 2, "b": 3}
+//	filtered := WithoutEmptyKeys(mapping) // filtered == map[string]int{"a": 2, "b": 3}
 func WithoutEmptyKeys[K comparable, T any](input map[K]T) map[K]T {
 	if input == nil {
 		return make(map[K]T)
@@ -317,7 +418,10 @@ func WithoutEmptyKeys[K comparable, T any](input map[K]T) map[K]T {
 	return out
 }
 
-// WithoutEmptyValues returns a new map without empty values.
+// WithoutEmptyValues returns a new map with all entries that have zero-value values removed.
+//
+//	mapping := map[string]int{"a": 0, "b": 2, "c": 3}
+//	filtered := WithoutEmptyValues(mapping) // filtered == map[string]int{"b": 2, "c": 3}
 func WithoutEmptyValues[K, T comparable](input map[K]T) map[K]T {
 	if input == nil {
 		return make(map[K]T)
@@ -332,12 +436,18 @@ func WithoutEmptyValues[K, T comparable](input map[K]T) map[K]T {
 	return out
 }
 
-// NotEmpty returns a new slice without empty elements.
+// NotEmpty is an alias for WithoutEmpty that returns a new slice with all zero values removed.
+//
+//	mixed := []string{"hello", "", "world", ""}
+//	nonEmpty := NotEmpty(mixed) // nonEmpty == []string{"hello", "world"}
 func NotEmpty[T comparable](input []T) []T {
 	return WithoutEmpty(input)
 }
 
-// NotEmptyMap returns a new map without empty keys and values.
+// NotEmptyMap returns a new map with all entries that have zero-value keys or values removed.
+//
+//	mapping := map[string]int{"": 1, "a": 0, "b": 2}
+//	filtered := NotEmptyMap(mapping) // filtered == map[string]int{"b": 2}
 func NotEmptyMap[K, T comparable](input map[K]T) map[K]T {
 	if input == nil {
 		return make(map[K]T)
