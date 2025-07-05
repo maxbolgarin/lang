@@ -1,6 +1,6 @@
 # lang
 
-[![Go Version][version-img]][doc] [![GoDoc][doc-img]][doc] [![Build][ci-img]][ci] [![GoReport][report-img]][report]
+[![Go Version][version-img]][doc] [![GoDoc][doc-img]][doc] [![Build][ci-img]][ci] [![GoReport][report-img]][report][![Coverage][coverage-img]][coverage]
 
 **Package `lang` provides useful generic one-liners to work with variables, slices and maps**
 
@@ -556,3 +556,5 @@ groups := lang.GroupBy(people, func(p Person) string { return p.Department })
 [ci]: https://github.com/maxbolgarin/lang/actions
 [report-img]: https://goreportcard.com/badge/github.com/maxbolgarin/lang
 [report]: https://goreportcard.com/report/github.com/maxbolgarin/lang
+[coverage-img]: https://codecov.io/gh/maxbolgarin/lang/branch/main/graph/badge.svg
+[coverage]: https://codecov.io/gh/maxbolgarin/lang
