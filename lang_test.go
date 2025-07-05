@@ -695,8 +695,8 @@ func TestTruncateString(t *testing.T) {
 	t.Run("truncated with default ellipsis", func(t *testing.T) {
 		s := "hello world"
 		result := lang.TruncateString(s, 5)
-		if result != "hello..." {
-			t.Errorf("Expected %q, got %q", "hello...", result)
+		if result != "hello" {
+			t.Errorf("Expected %q, got %q", "hello", result)
 		}
 	})
 

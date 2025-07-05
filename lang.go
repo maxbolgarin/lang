@@ -327,7 +327,7 @@ func JoinErrors(errs ...error) error {
 // TruncateString truncates a string to a maximum length and adds an ellipsis if necessary.
 //
 //	s := "Hello, world!"
-//	t := TruncateString(s, 5) // t == "Hello..."
+//	t := TruncateString(s, 5, "...") // t == "Hello..."
 func TruncateString(s string, maxLen int, ellipsis ...string) string {
 	if maxLen <= 0 {
 		return ""
@@ -338,7 +338,7 @@ func TruncateString(s string, maxLen int, ellipsis ...string) string {
 	if len(ellipsis) > 0 {
 		return s[:maxLen] + ellipsis[0]
 	}
-	return s[:maxLen] + "..."
+	return s[:maxLen]
 }
 
 // Retry attempts to execute a function until it succeeds or reaches max attempts.
