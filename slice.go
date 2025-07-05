@@ -888,3 +888,32 @@ func TruncateSliceWithCopy[T any](s []T, maxLen int) []T {
 	copy(copied, s[:maxLen])
 	return copied
 }
+
+// Slice returns a slice of the given type.
+// If the input is a slice, it is truncated to the given length.
+// If the input is a single value, it is returned as a slice of length 1.
+// If the input is not a slice or a single value, it is returned as nil.
+//
+//	a := []int{1, 2, 3}
+//	b := Slice(a, 2) // b == []int{1, 2}
+func Slice[T any](s any, maxLenRaw ...int) []T {
+	if s == nil {
+		return nil
+	}
+	var maxLen int
+	if len(maxLenRaw) > 0 {
+		maxLen = maxLenRaw[0]
+		if maxLen <= 0 {
+			return []T{}
+		}
+	}
+	slice, ok := s.([]T)
+	if ok {
+		return TruncateSlice(slice, Check(maxLen, len(slice)))
+	}
+	val, ok := s.(T)
+	if ok {
+		return []T{val}
+	}
+	return nil
+}

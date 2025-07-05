@@ -3084,3 +3084,209 @@ func TestTruncateSliceWithCopy_EdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func TestSlice(t *testing.T) {
+	t.Run("nil input", func(t *testing.T) {
+		result := lang.Slice[int](nil)
+		if result != nil {
+			t.Errorf("Expected nil for nil input, got %v", result)
+		}
+	})
+
+	t.Run("slice input without maxLen", func(t *testing.T) {
+		input := []int{1, 2, 3, 4, 5}
+		result := lang.Slice[int](input)
+		expected := []int{1, 2, 3, 4, 5}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("slice input with maxLen", func(t *testing.T) {
+		input := []int{1, 2, 3, 4, 5}
+		result := lang.Slice[int](input, 3)
+		expected := []int{1, 2, 3}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("slice input with maxLen larger than slice", func(t *testing.T) {
+		input := []int{1, 2, 3}
+		result := lang.Slice[int](input, 10)
+		expected := []int{1, 2, 3}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("slice input with zero maxLen", func(t *testing.T) {
+		input := []int{1, 2, 3, 4, 5}
+		result := lang.Slice[int](input, 0)
+		expected := []int{}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("slice input with negative maxLen", func(t *testing.T) {
+		input := []int{1, 2, 3, 4, 5}
+		result := lang.Slice[int](input, -1)
+		expected := []int{}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("empty slice input", func(t *testing.T) {
+		input := []int{}
+		result := lang.Slice[int](input)
+		expected := []int{}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("single value input - int", func(t *testing.T) {
+		input := 42
+		result := lang.Slice[int](input)
+		expected := []int{42}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("single value input - string", func(t *testing.T) {
+		input := "hello"
+		result := lang.Slice[string](input)
+		expected := []string{"hello"}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("single value input - struct", func(t *testing.T) {
+		type Person struct {
+			Name string
+			Age  int
+		}
+		input := Person{Name: "Alice", Age: 30}
+		result := lang.Slice[Person](input)
+		expected := []Person{{Name: "Alice", Age: 30}}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("incompatible type input", func(t *testing.T) {
+		input := "hello"
+		result := lang.Slice[int](input) // string passed to int slice
+		if result != nil {
+			t.Errorf("Expected nil for incompatible type, got %v", result)
+		}
+	})
+
+	t.Run("string slice with string input", func(t *testing.T) {
+		input := []string{"a", "b", "c", "d"}
+		result := lang.Slice[string](input, 2)
+		expected := []string{"a", "b"}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("interface{} input with correct type", func(t *testing.T) {
+		var input interface{} = 123
+		result := lang.Slice[int](input)
+		expected := []int{123}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("interface{} input with slice", func(t *testing.T) {
+		var input interface{} = []int{1, 2, 3, 4}
+		result := lang.Slice[int](input, 2)
+		expected := []int{1, 2}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("multiple maxLen values", func(t *testing.T) {
+		input := []int{1, 2, 3, 4, 5}
+		// Should use First(maxLen) which returns the first value
+		result := lang.Slice[int](input, 2, 3, 4)
+		expected := []int{1, 2}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("zero value input", func(t *testing.T) {
+		input := 0
+		result := lang.Slice[int](input)
+		expected := []int{0}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("bool input", func(t *testing.T) {
+		input := true
+		result := lang.Slice[bool](input)
+		expected := []bool{true}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+}
+
+func TestSlice_EdgeCases(t *testing.T) {
+	t.Run("pointer input", func(t *testing.T) {
+		val := 42
+		input := &val
+		result := lang.Slice[*int](input)
+		expected := []*int{&val}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("slice of pointers", func(t *testing.T) {
+		val1, val2, val3 := 1, 2, 3
+		input := []*int{&val1, &val2, &val3}
+		result := lang.Slice[*int](input, 2)
+		expected := []*int{&val1, &val2}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("wrong type for slice element", func(t *testing.T) {
+		// Pass a slice of strings but expect slice of int
+		input := []string{"a", "b", "c"}
+		result := lang.Slice[int](input)
+		if result != nil {
+			t.Errorf("Expected nil for wrong slice element type, got %v", result)
+		}
+	})
+
+	t.Run("nested slice type", func(t *testing.T) {
+		input := [][]int{{1, 2}, {3, 4}}
+		result := lang.Slice[[]int](input, 1)
+		expected := [][]int{{1, 2}}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+
+	t.Run("channel input", func(t *testing.T) {
+		input := make(chan int)
+		result := lang.Slice[chan int](input)
+		expected := []chan int{input}
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("Expected %v, got %v", expected, result)
+		}
+	})
+}
