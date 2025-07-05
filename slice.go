@@ -848,3 +848,43 @@ func Partition[T any](s []T, predicate func(T) bool) ([]T, []T) {
 
 	return matching, nonMatching
 }
+
+// TruncateSlice truncates a slice to a maximum length.
+// It is not change capacity of the slice, so items will be still in the underlying array.
+//
+//	a := []int{1, 2, 3}
+//	b := TruncateSlice(a, 2) // b == []int{1, 2}
+func TruncateSlice[T any](s []T, maxLen int) []T {
+	if s == nil {
+		return nil
+	}
+	if maxLen <= 0 {
+		return s[:0]
+	}
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen]
+}
+
+// TruncateSliceWithCopy truncates a slice to a maximum length and returns a new slice.
+// Old slice will be garbage collected if there are no references to it.
+//
+//	a := []int{1, 2, 3}
+//	b := TruncateSliceWithCopy(a, 2) // b == []int{1, 2}
+func TruncateSliceWithCopy[T any](s []T, maxLen int) []T {
+	if s == nil {
+		return nil
+	}
+	if maxLen <= 0 {
+		return s[:0]
+	}
+	if len(s) <= maxLen {
+		copied := make([]T, len(s))
+		copy(copied, s)
+		return copied
+	}
+	copied := make([]T, maxLen)
+	copy(copied, s[:maxLen])
+	return copied
+}

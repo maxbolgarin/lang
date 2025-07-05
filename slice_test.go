@@ -2764,3 +2764,323 @@ func TestPartition(t *testing.T) {
 		})
 	}
 }
+
+func TestTruncateSlice(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  []int
+		maxLen int
+		want   []int
+	}{
+		{
+			name:   "normal usage",
+			input:  []int{1, 2, 3, 4, 5},
+			maxLen: 3,
+			want:   []int{1, 2, 3},
+		},
+		{
+			name:   "maxLen equals length",
+			input:  []int{1, 2, 3},
+			maxLen: 3,
+			want:   []int{1, 2, 3},
+		},
+		{
+			name:   "maxLen greater than length",
+			input:  []int{1, 2, 3},
+			maxLen: 5,
+			want:   []int{1, 2, 3},
+		},
+		{
+			name:   "zero maxLen",
+			input:  []int{1, 2, 3, 4, 5},
+			maxLen: 0,
+			want:   []int{},
+		},
+		{
+			name:   "negative maxLen",
+			input:  []int{1, 2, 3, 4, 5},
+			maxLen: -2,
+			want:   []int{},
+		},
+		{
+			name:   "empty slice",
+			input:  []int{},
+			maxLen: 3,
+			want:   []int{},
+		},
+		{
+			name:   "nil slice",
+			input:  nil,
+			maxLen: 3,
+			want:   nil,
+		},
+		{
+			name:   "single element",
+			input:  []int{42},
+			maxLen: 1,
+			want:   []int{42},
+		},
+		{
+			name:   "truncate single element",
+			input:  []int{42},
+			maxLen: 0,
+			want:   []int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Keep reference to original for testing
+			original := tt.input
+			got := lang.TruncateSlice(tt.input, tt.maxLen)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("TruncateSlice() = %v, want %v", got, tt.want)
+			}
+
+			// Test that original slice shares underlying array (when applicable)
+			if len(original) > 0 && len(got) > 0 && tt.maxLen > 0 && len(original) > tt.maxLen {
+				// Modify the truncated slice to verify it affects the original
+				originalFirst := original[0]
+				got[0] = got[0] + 100
+				if original[0] == originalFirst {
+					t.Errorf("TruncateSlice() should share underlying array with original")
+				}
+				// Reset for next tests
+				got[0] = originalFirst
+			}
+		})
+	}
+}
+
+func TestTruncateSliceWithCopy(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  []int
+		maxLen int
+		want   []int
+	}{
+		{
+			name:   "normal usage",
+			input:  []int{1, 2, 3, 4, 5},
+			maxLen: 3,
+			want:   []int{1, 2, 3},
+		},
+		{
+			name:   "maxLen equals length",
+			input:  []int{1, 2, 3},
+			maxLen: 3,
+			want:   []int{1, 2, 3},
+		},
+		{
+			name:   "maxLen greater than length",
+			input:  []int{1, 2, 3},
+			maxLen: 5,
+			want:   []int{1, 2, 3},
+		},
+		{
+			name:   "zero maxLen",
+			input:  []int{1, 2, 3, 4, 5},
+			maxLen: 0,
+			want:   []int{},
+		},
+		{
+			name:   "negative maxLen",
+			input:  []int{1, 2, 3, 4, 5},
+			maxLen: -2,
+			want:   []int{},
+		},
+		{
+			name:   "empty slice",
+			input:  []int{},
+			maxLen: 3,
+			want:   []int{},
+		},
+		{
+			name:   "nil slice",
+			input:  nil,
+			maxLen: 3,
+			want:   nil,
+		},
+		{
+			name:   "single element",
+			input:  []int{42},
+			maxLen: 1,
+			want:   []int{42},
+		},
+		{
+			name:   "truncate single element",
+			input:  []int{42},
+			maxLen: 0,
+			want:   []int{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Keep reference to original for testing
+			original := make([]int, len(tt.input))
+			copy(original, tt.input)
+			got := lang.TruncateSliceWithCopy(tt.input, tt.maxLen)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("TruncateSliceWithCopy() = %v, want %v", got, tt.want)
+			}
+
+			// Test that result is a copy, not sharing underlying array
+			if len(original) > 0 && len(got) > 0 {
+				originalFirst := original[0]
+				got[0] = got[0] + 100
+				if original[0] != originalFirst {
+					t.Errorf("TruncateSliceWithCopy() should not modify original slice")
+				}
+			}
+		})
+	}
+}
+
+func TestTruncateSlice_vs_TruncateSliceWithCopy(t *testing.T) {
+	t.Run("shared vs independent underlying arrays", func(t *testing.T) {
+		original := []int{1, 2, 3, 4, 5}
+
+		// Test TruncateSlice shares underlying array
+		truncated := lang.TruncateSlice(original, 3)
+		truncatedCopy := lang.TruncateSliceWithCopy(original, 3)
+
+		// Both should have same content initially
+		if !reflect.DeepEqual(truncated, truncatedCopy) {
+			t.Errorf("TruncateSlice and TruncateSliceWithCopy should return same content")
+		}
+
+		// Modify original slice
+		original[0] = 999
+
+		// TruncateSlice should reflect the change (shares array)
+		if truncated[0] != 999 {
+			t.Errorf("TruncateSlice should share underlying array, expected first element to be 999, got %d", truncated[0])
+		}
+
+		// TruncateSliceWithCopy should not reflect the change (independent copy)
+		if truncatedCopy[0] != 1 {
+			t.Errorf("TruncateSliceWithCopy should be independent, expected first element to be 1, got %d", truncatedCopy[0])
+		}
+	})
+
+	t.Run("capacity behavior", func(t *testing.T) {
+		original := make([]int, 5, 10) // length 5, capacity 10
+		for i := range original {
+			original[i] = i + 1
+		}
+
+		truncated := lang.TruncateSlice(original, 3)
+		truncatedCopy := lang.TruncateSliceWithCopy(original, 3)
+
+		// TruncateSlice keeps original capacity
+		if cap(truncated) != cap(original) {
+			t.Errorf("TruncateSlice should preserve original capacity, expected %d, got %d", cap(original), cap(truncated))
+		}
+
+		// TruncateSliceWithCopy has new capacity equal to length
+		if cap(truncatedCopy) != len(truncatedCopy) {
+			t.Errorf("TruncateSliceWithCopy should have capacity equal to length, expected %d, got %d", len(truncatedCopy), cap(truncatedCopy))
+		}
+	})
+}
+
+func TestTruncateSlice_EdgeCases(t *testing.T) {
+	t.Run("string slice", func(t *testing.T) {
+		input := []string{"a", "b", "c", "d", "e"}
+		result := lang.TruncateSlice(input, 3)
+		expected := []string{"a", "b", "c"}
+
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("TruncateSlice with strings = %v, want %v", result, expected)
+		}
+	})
+
+	t.Run("custom struct slice", func(t *testing.T) {
+		type Person struct {
+			Name string
+			Age  int
+		}
+
+		input := []Person{
+			{"Alice", 25},
+			{"Bob", 30},
+			{"Charlie", 35},
+		}
+
+		result := lang.TruncateSlice(input, 2)
+		expected := []Person{
+			{"Alice", 25},
+			{"Bob", 30},
+		}
+
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("TruncateSlice with custom structs = %v, want %v", result, expected)
+		}
+	})
+
+	t.Run("large maxLen", func(t *testing.T) {
+		input := []int{1, 2, 3}
+		result := lang.TruncateSlice(input, 1000000)
+
+		if !reflect.DeepEqual(result, input) {
+			t.Errorf("TruncateSlice with large maxLen should return original slice")
+		}
+
+		// Should be the same slice reference
+		if &result[0] != &input[0] {
+			t.Errorf("TruncateSlice with large maxLen should return same slice reference")
+		}
+	})
+}
+
+func TestTruncateSliceWithCopy_EdgeCases(t *testing.T) {
+	t.Run("string slice", func(t *testing.T) {
+		input := []string{"a", "b", "c", "d", "e"}
+		result := lang.TruncateSliceWithCopy(input, 3)
+		expected := []string{"a", "b", "c"}
+
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("TruncateSliceWithCopy with strings = %v, want %v", result, expected)
+		}
+	})
+
+	t.Run("custom struct slice", func(t *testing.T) {
+		type Person struct {
+			Name string
+			Age  int
+		}
+
+		input := []Person{
+			{"Alice", 25},
+			{"Bob", 30},
+			{"Charlie", 35},
+		}
+
+		result := lang.TruncateSliceWithCopy(input, 2)
+		expected := []Person{
+			{"Alice", 25},
+			{"Bob", 30},
+		}
+
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("TruncateSliceWithCopy with custom structs = %v, want %v", result, expected)
+		}
+	})
+
+	t.Run("large maxLen", func(t *testing.T) {
+		input := []int{1, 2, 3}
+		result := lang.TruncateSliceWithCopy(input, 1000000)
+
+		if !reflect.DeepEqual(result, input) {
+			t.Errorf("TruncateSliceWithCopy with large maxLen should return copy with same content")
+		}
+
+		// Should NOT be the same slice reference (should be a copy)
+		if len(input) > 0 && len(result) > 0 && &result[0] == &input[0] {
+			t.Errorf("TruncateSliceWithCopy should return a copy, not same slice reference")
+		}
+	})
+}
