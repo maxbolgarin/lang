@@ -1,6 +1,6 @@
 # lang
 
-[![Go Version][version-img]][doc] [![GoDoc][doc-img]][doc] [![Build][ci-img]][ci] [![GoReport][report-img]][report][![Coverage][coverage-img]][coverage]
+[![Go Version][version-img]][doc] [![GoDoc][doc-img]][doc] [![Build][ci-img]][ci] [![Coverage][coverage-img]][coverage] [![GoReport][report-img]][report]
 
 **Package `lang` provides useful generic one-liners to work with variables, slices and maps**
 

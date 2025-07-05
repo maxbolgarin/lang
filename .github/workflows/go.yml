@@ -42,6 +42,7 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage.out
+        slug: maxbolgarin/lang
         flags: unittests
         name: lang-go-coverage
         fail_ci_if_error: true
