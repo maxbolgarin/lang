@@ -549,7 +549,7 @@ groups := lang.GroupBy(people, func(p Person) string { return p.Department })
 
 **Add functional programming power to your Go projects: [Documentation][doc]**
 
-[version-img]: https://img.shields.io/badge/Go-%3E%3D%201.19-%23007d9c
+[version-img]: https://img.shields.io/badge/Go-%3E%3D%201.20-%23007d9c
 [doc-img]: https://pkg.go.dev/badge/github.com/maxbolgarin/lang
 [doc]: https://pkg.go.dev/github.com/maxbolgarin/lang
 [ci-img]: https://github.com/maxbolgarin/lang/actions/workflows/go.yml/badge.svg
