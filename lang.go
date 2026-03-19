@@ -543,20 +543,18 @@ var ErrTimeout = errors.New("operation timed out")
 //	    return SlowOperation()
 //	})
 func RunWithTimeout[T any](timeout time.Duration, f func() (T, error)) (T, error) {
-	type result struct {
-		val T
-		err error
-	}
-	ch := make(chan result, 1)
+	chVal := make(chan T, 1)
+	chErr := make(chan error, 1)
 
 	go func() {
 		v, err := f()
-		ch <- result{v, err}
+		chVal <- v
+		chErr <- err
 	}()
 
 	select {
-	case r := <-ch:
-		return r.val, r.err
+	case v := <-chVal:
+		return v, <-chErr
 	case <-time.After(timeout):
 		var zero T
 		return zero, ErrTimeout
