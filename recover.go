@@ -35,9 +35,8 @@ func Go(l Logger, f func()) {
 	var lastRestart time.Time
 	maxRestartsPerMinute := 60 // Limit to 1 restart per second on average
 
-	var foo func()
-	fn := f
-	foo = func() {
+	var run func()
+	run = func() {
 		defer func() {
 			if err := recover(); err != nil {
 				printErrorWithStack(l, err)
@@ -66,24 +65,23 @@ func Go(l Logger, f func()) {
 				}
 
 				// Restart the goroutine
-				go foo()
+				go run()
 			}
 		}()
-		fn()
+		f()
 	}
-	go foo()
+	go run()
 }
 
 // Recover should be used with defer to recover from panics and log the stack trace.
 // It returns true if a panic was recovered, false otherwise.
 // Use this when you want to handle panics gracefully without stopping execution.
 //
+// Important: must be called directly as a deferred function, not wrapped in a closure,
+// because Go's recover() only works when called directly by a deferred function.
+//
 //	func riskyOperation() {
-//	    defer func() {
-//	        if Recover(logger) {
-//	            // Handle the panic case
-//	        }
-//	    }()
+//	    defer Recover(logger)
 //	    // Code that might panic
 //	}
 func Recover(l Logger) bool {
@@ -99,12 +97,11 @@ func Recover(l Logger) bool {
 // The panic is converted to an error and stored in the provided error pointer.
 // Use this when you want to convert panics to errors without logging.
 //
+// Important: must be called directly as a deferred function, not wrapped in a closure,
+// because Go's recover() only works when called directly by a deferred function.
+//
 //	func riskyOperation() (err error) {
-//	    defer func() {
-//	        if RecoverWithErr(&err) {
-//	            // Panic was converted to error
-//	        }
-//	    }()
+//	    defer RecoverWithErr(&err)
 //	    // Code that might panic
 //	    return nil
 //	}
@@ -123,12 +120,11 @@ func RecoverWithErr(outerError *error) bool {
 // The panic is converted to an error and stored in the provided error pointer, and the stack trace is logged.
 // Use this when you want to convert panics to errors and also log the stack trace.
 //
+// Important: must be called directly as a deferred function, not wrapped in a closure,
+// because Go's recover() only works when called directly by a deferred function.
+//
 //	func riskyOperation() (err error) {
-//	    defer func() {
-//	        if RecoverWithErrAndStack(logger, &err) {
-//	            // Panic was converted to error and logged
-//	        }
-//	    }()
+//	    defer RecoverWithErrAndStack(logger, &err)
 //	    // Code that might panic
 //	    return nil
 //	}
@@ -149,14 +145,13 @@ func RecoverWithErrAndStack(l Logger, outerError *error) bool {
 // The handler function is called with the panic value if a panic occurs.
 // Use this when you want custom handling of panics.
 //
+// Important: must be called directly as a deferred function, not wrapped in a closure,
+// because Go's recover() only works when called directly by a deferred function.
+//
 //	func riskyOperation() {
-//	    defer func() {
-//	        if RecoverWithHandler(func(panicValue any) {
-//	            fmt.Printf("Panic recovered: %v\n", panicValue)
-//	        }) {
-//	            // Panic was handled
-//	        }
-//	    }()
+//	    defer RecoverWithHandler(func(panicValue any) {
+//	        fmt.Printf("Panic recovered: %v\n", panicValue)
+//	    })
 //	    // Code that might panic
 //	}
 func RecoverWithHandler(handler func(err any)) bool {
