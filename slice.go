@@ -599,29 +599,17 @@ func Intersect[T comparable](a, b []T) []T {
 		return []T{}
 	}
 
-	// Use the smaller slice to build the lookup map for efficiency
-	var lookup map[T]struct{}
-	var iterate []T
-
-	if len(a) <= len(b) {
-		lookup = make(map[T]struct{}, len(a))
-		for _, v := range a {
-			lookup[v] = struct{}{}
-		}
-		iterate = b
-	} else {
-		lookup = make(map[T]struct{}, len(b))
-		for _, v := range b {
-			lookup[v] = struct{}{}
-		}
-		iterate = a
+	// Build lookup from b, always iterate a to preserve a's ordering
+	lookup := make(map[T]struct{}, len(b))
+	for _, v := range b {
+		lookup[v] = struct{}{}
 	}
 
-	// Build result with elements that exist in both
+	// Build result with elements from a that also exist in b
 	result := make([]T, 0)
 	seen := make(map[T]struct{})
 
-	for _, v := range iterate {
+	for _, v := range a {
 		if _, exists := lookup[v]; exists {
 			if _, alreadySeen := seen[v]; !alreadySeen {
 				seen[v] = struct{}{}
@@ -987,7 +975,7 @@ func TruncateSliceWithCopy[T any](s []T, maxLen int) []T {
 		return nil
 	}
 	if maxLen <= 0 {
-		return s[:0]
+		return []T{}
 	}
 	if len(s) <= maxLen {
 		copied := make([]T, len(s))
