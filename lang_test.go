@@ -729,6 +729,33 @@ func TestJoinErrors(t *testing.T) {
 			t.Errorf("Expected error to contain separator, got %v", err.Error())
 		}
 	})
+
+	t.Run("errors.Is works through JoinErrors", func(t *testing.T) {
+		sentinel := errors.New("sentinel")
+		err := lang.JoinErrors(sentinel, errors.New("other"))
+		if !errors.Is(err, sentinel) {
+			t.Error("Expected errors.Is to find sentinel error")
+		}
+	})
+
+	t.Run("Unwrap returns original errors", func(t *testing.T) {
+		err1 := errors.New("error 1")
+		err2 := errors.New("error 2")
+		joined := lang.JoinErrors(err1, err2)
+
+		unwrapper, ok := joined.(interface{ Unwrap() []error })
+		if !ok {
+			t.Fatal("Expected joined error to implement Unwrap() []error")
+		}
+
+		unwrapped := unwrapper.Unwrap()
+		if len(unwrapped) != 2 {
+			t.Fatalf("Expected 2 unwrapped errors, got %d", len(unwrapped))
+		}
+		if unwrapped[0] != err1 || unwrapped[1] != err2 {
+			t.Error("Unwrapped errors don't match originals")
+		}
+	})
 }
 
 func TestTruncateString(t *testing.T) {
@@ -1320,6 +1347,30 @@ func TestRetry(t *testing.T) {
 
 		if attempts != 3 {
 			t.Errorf("Expected 3 attempts, got %d", attempts)
+		}
+	})
+
+	t.Run("zero max attempts", func(t *testing.T) {
+		_, err := lang.Retry(0, func() (string, error) {
+			return "should not run", nil
+		})
+
+		if err == nil {
+			t.Error("Expected error for zero max attempts")
+		}
+
+		if !strings.Contains(err.Error(), "maxAttempts must be positive") {
+			t.Errorf("Expected maxAttempts error message, got %v", err.Error())
+		}
+	})
+
+	t.Run("negative max attempts", func(t *testing.T) {
+		_, err := lang.Retry(-1, func() (string, error) {
+			return "should not run", nil
+		})
+
+		if err == nil {
+			t.Error("Expected error for negative max attempts")
 		}
 	})
 }

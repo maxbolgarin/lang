@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -208,21 +207,17 @@ func CheckMap[K comparable, V any](v1, v2 map[K]V) map[K]V {
 	return v1
 }
 
-// CheckMapSingle returns the first argument if it is not empty, else returns the second one wrapped in a map.
+// CheckMapSingle returns the first argument if it is not empty, else returns a new map with the provided key-value pair.
 //
-//	a := nil
-//	b := "foo"
-//	c := CheckMapSingle(a, b)  // c == map[string]string{"foo": "bar"}
+//	a := map[string]string{}
+//	b := map[string]string{"foo": "bar"}
+//	c := CheckMapSingle(a, "key", "val")   // c == map[string]string{"key": "val"}
+//	d := CheckMapSingle(b, "key", "val")   // d == map[string]string{"foo": "bar"}
 func CheckMapSingle[K comparable, V any](m map[K]V, k K, v V) map[K]V {
 	if len(m) > 0 {
 		return m
 	}
-	// Initialize map if nil to prevent panic
-	if m == nil {
-		m = make(map[K]V)
-	}
-	m[k] = v
-	return m
+	return map[K]V{k: v}
 }
 
 // IsFound returns if the value is in the slice.
@@ -334,19 +329,37 @@ func Wrap(err error, message string) error {
 //	    return err
 //	}
 func JoinErrors(errs ...error) error {
-	var nonNilErrs []string
+	var nonNilErrs []error
 	for _, err := range errs {
 		if err != nil {
-			nonNilErrs = append(nonNilErrs, err.Error())
+			nonNilErrs = append(nonNilErrs, err)
 		}
 	}
 	if len(nonNilErrs) == 0 {
 		return nil
 	}
-	return errors.New(strings.Join(nonNilErrs, "; "))
+	return &joinError{errs: nonNilErrs}
 }
 
-// TruncateString truncates a string to a maximum length and adds an ellipsis if necessary.
+// joinError is a custom error type that preserves error chain for errors.Is and errors.As.
+type joinError struct {
+	errs []error
+}
+
+func (e *joinError) Error() string {
+	msgs := make([]string, len(e.errs))
+	for i, err := range e.errs {
+		msgs[i] = err.Error()
+	}
+	return strings.Join(msgs, "; ")
+}
+
+func (e *joinError) Unwrap() []error {
+	return e.errs
+}
+
+// TruncateString truncates a string to a maximum number of runes and adds an ellipsis if necessary.
+// It correctly handles multi-byte UTF-8 characters.
 //
 //	s := "Hello, world!"
 //	t := TruncateString(s, 5, "...") // t == "Hello..."
@@ -354,13 +367,14 @@ func TruncateString(s string, maxLen int, ellipsis ...string) string {
 	if maxLen <= 0 {
 		return ""
 	}
-	if len(s) <= maxLen {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
 		return s
 	}
 	if len(ellipsis) > 0 {
-		return s[:maxLen] + ellipsis[0]
+		return string(runes[:maxLen]) + ellipsis[0]
 	}
-	return s[:maxLen]
+	return string(runes[:maxLen])
 }
 
 // String returns the string representation of the value with the optional maximum length.
@@ -502,6 +516,10 @@ func Type[Target any](s any) Target {
 //	    return CallExternalAPI()
 //	})
 func Retry[T any](maxAttempts int, f func() (T, error)) (T, error) {
+	if maxAttempts <= 0 {
+		var zero T
+		return zero, fmt.Errorf("maxAttempts must be positive, got %d", maxAttempts)
+	}
 	var lastErr error
 	for i := 0; i < maxAttempts; i++ {
 		result, err := f()
@@ -517,27 +535,28 @@ func Retry[T any](maxAttempts int, f func() (T, error)) (T, error) {
 var ErrTimeout = errors.New("operation timed out")
 
 // RunWithTimeout runs a function with a timeout.
+// If the function does not complete within the timeout, ErrTimeout is returned.
+// Note: the function goroutine is not cancelled on timeout; if f does not return,
+// the goroutine will leak. Use context-based cancellation inside f for long-running operations.
 //
 //	result, err := RunWithTimeout(time.Second, func() (string, error) {
 //	    return SlowOperation()
 //	})
 func RunWithTimeout[T any](timeout time.Duration, f func() (T, error)) (T, error) {
-	var result T
-	var err error
-	var wg sync.WaitGroup
-
-	done := make(chan struct{})
-	wg.Add(1)
+	type result struct {
+		val T
+		err error
+	}
+	ch := make(chan result, 1)
 
 	go func() {
-		defer wg.Done()
-		result, err = f()
-		close(done)
+		v, err := f()
+		ch <- result{v, err}
 	}()
 
 	select {
-	case <-done:
-		return result, err
+	case r := <-ch:
+		return r.val, r.err
 	case <-time.After(timeout):
 		var zero T
 		return zero, ErrTimeout
