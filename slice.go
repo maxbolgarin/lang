@@ -465,6 +465,8 @@ func NotEmptyMap[K, T comparable](input map[K]T) map[K]T {
 
 // SplitByChunkSize splits a slice into chunks of the specified size.
 // If chunkSize is less than 1, it will be treated as 1.
+// Chunks are views of the original array (no copy), but their capacity is limited,
+// so appending to a chunk reallocates and does not affect the neighboring chunks.
 //
 //	items := []int{1, 2, 3, 4, 5, 6, 7}
 //	chunks := SplitByChunkSize(items, 3) // chunks == [][]int{{1, 2, 3}, {4, 5, 6}, {7}}
@@ -477,13 +479,13 @@ func SplitByChunkSize[T any](items []T, chunkSize int) [][]T {
 		chunkSize = 1
 	}
 
-	var chunks [][]T
+	chunks := make([][]T, 0, (len(items)+chunkSize-1)/chunkSize)
 	for i := 0; i < len(items); i += chunkSize {
 		end := i + chunkSize
 		if end > len(items) {
 			end = len(items)
 		}
-		chunks = append(chunks, items[i:end])
+		chunks = append(chunks, items[i:end:end])
 	}
 
 	return chunks
@@ -948,7 +950,7 @@ func Partition[T any](s []T, predicate func(T) bool) ([]T, []T) {
 }
 
 // TruncateSlice truncates a slice to a maximum length.
-// It is not change capacity of the slice, so items will be still in the underlying array.
+// It does not change the capacity of the slice, so items will still be in the underlying array.
 //
 //	a := []int{1, 2, 3}
 //	b := TruncateSlice(a, 2) // b == []int{1, 2}
@@ -993,7 +995,7 @@ func TruncateSliceWithCopy[T any](s []T, maxLen int) []T {
 // If the input is not a slice or a single value, it is returned as nil.
 //
 //	a := []int{1, 2, 3}
-//	b := Slice(a, 2) // b == []int{1, 2}
+//	b := Slice[int](a, 2) // b == []int{1, 2}
 func Slice[T any](s any, maxLenRaw ...int) []T {
 	if s == nil {
 		return nil

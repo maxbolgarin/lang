@@ -1384,16 +1384,23 @@ func TestSplitByChunkSize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := lang.SplitByChunkSize(tt.input, tt.chunkSize)
 			if !reflect.DeepEqual(got, tt.want) {
-				if len(got) != len(tt.want) {
-					t.Errorf("SplitByChunkSize() = %v, want %v", got, tt.want)
-				}
-				for i, chunk := range got {
-					if !reflect.DeepEqual(chunk, tt.want[i]) {
-						t.Errorf("SplitByChunkSize() = %v, want %v", got, tt.want)
-					}
-				}
+				t.Errorf("SplitByChunkSize() = %#v, want %#v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSplitByChunkSize_AppendDoesNotCorruptNeighbors(t *testing.T) {
+	items := []int{1, 2, 3, 4, 5, 6, 7}
+	chunks := lang.SplitByChunkSize(items, 3)
+
+	chunks[0] = append(chunks[0], 99)
+
+	if !reflect.DeepEqual(chunks[1], []int{4, 5, 6}) {
+		t.Errorf("appending to chunks[0] corrupted chunks[1] = %v, want [4 5 6]", chunks[1])
+	}
+	if !reflect.DeepEqual(items, []int{1, 2, 3, 4, 5, 6, 7}) {
+		t.Errorf("appending to chunks[0] corrupted the original slice = %v", items)
 	}
 }
 
@@ -2091,14 +2098,7 @@ func TestChunk(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := lang.Chunk(tt.input, tt.size)
 			if !reflect.DeepEqual(got, tt.want) {
-				if len(got) != len(tt.want) {
-					t.Errorf("Chunk() = %v, want %v", got, tt.want)
-				}
-				for i, chunk := range got {
-					if !reflect.DeepEqual(chunk, tt.want[i]) {
-						t.Errorf("Chunk() = %v, want %v", got, tt.want)
-					}
-				}
+				t.Errorf("Chunk() = %#v, want %#v", got, tt.want)
 			}
 		})
 	}
