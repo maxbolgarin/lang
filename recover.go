@@ -108,7 +108,7 @@ func Recover(l Logger) bool {
 func RecoverWithErr(outerError *error) bool {
 	if panicErr := recover(); panicErr != nil {
 		if outerError != nil {
-			*outerError = fmt.Errorf("%v", panicErr)
+			*outerError = panicToError(panicErr)
 		}
 		return true
 	}
@@ -130,7 +130,7 @@ func RecoverWithErr(outerError *error) bool {
 //	}
 func RecoverWithErrAndStack(l Logger, outerError *error) bool {
 	if panicErr := recover(); panicErr != nil {
-		err := fmt.Errorf("%v", panicErr)
+		err := panicToError(panicErr)
 		if outerError != nil {
 			*outerError = err
 		}
@@ -162,6 +162,15 @@ func RecoverWithHandler(handler func(err any)) bool {
 		return true
 	}
 	return false
+}
+
+// panicToError converts a panic value to an error.
+// If the panic value is already an error, it is wrapped to preserve errors.Is/errors.As identity.
+func panicToError(panicErr any) error {
+	if err, ok := panicErr.(error); ok {
+		return fmt.Errorf("%w", err)
+	}
+	return fmt.Errorf("%v", panicErr)
 }
 
 // printErrorWithStack logs an error with its stack trace using the provided logger.

@@ -48,6 +48,30 @@ func TestGo(t *testing.T) {
 	}
 }
 
+func TestGoNilPanic(t *testing.T) {
+	var (
+		wg         = sync.WaitGroup{}
+		l          = testLogger{}
+		counter    atomic.Int64
+		logCounter = int64(3)
+	)
+
+	wg.Add(1)
+	lang.Go(&l, func() {
+		counter.Add(1)
+		if counter.Load() < logCounter {
+			panic(nil) // must be logged and restarted like any other panic
+		}
+		wg.Done()
+	})
+
+	wg.Wait()
+
+	if l.logs.Load() != logCounter-1 {
+		t.Errorf("expected %d logs for panic(nil), got %d", logCounter-1, l.logs.Load())
+	}
+}
+
 func TestRecover(t *testing.T) {
 	l := testLogger{}
 	defer func() {
@@ -79,6 +103,48 @@ func TestRecoverWithErr(t *testing.T) {
 	}()
 	defer lang.RecoverWithErr(&err)
 	panic("panic-error")
+}
+
+func TestRecoverWithErrNilPanic(t *testing.T) {
+	var err error
+	defer func() {
+		if err == nil {
+			t.Error("expected error for panic(nil)")
+		}
+	}()
+	defer lang.RecoverWithErr(&err)
+	panic(nil)
+}
+
+var errSentinel = errors.New("sentinel error")
+
+func TestRecoverWithErrPreservesErrorIdentity(t *testing.T) {
+	var err error
+	defer func() {
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if !errors.Is(err, errSentinel) {
+			t.Errorf("expected errors.Is to match the original panic error, got %v", err)
+		}
+	}()
+	defer lang.RecoverWithErr(&err)
+	panic(errSentinel)
+}
+
+func TestRecoverWithErrAndStackPreservesErrorIdentity(t *testing.T) {
+	l := testLogger{}
+	var err error
+	defer func() {
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if !errors.Is(err, errSentinel) {
+			t.Errorf("expected errors.Is to match the original panic error, got %v", err)
+		}
+	}()
+	defer lang.RecoverWithErrAndStack(&l, &err)
+	panic(errSentinel)
 }
 
 func TestRecoverWithErrAndStack(t *testing.T) {
@@ -355,6 +421,16 @@ func TestDefaultIfPanic(t *testing.T) {
 
 		if result != 35 {
 			t.Errorf("Expected result to be 35, got %v", result)
+		}
+	})
+
+	t.Run("nil panic value returns default", func(t *testing.T) {
+		result := lang.DefaultIfPanic(42, func() int {
+			panic(nil)
+		})
+
+		if result != 42 {
+			t.Errorf("Expected result to be 42 for panic(nil), got %v", result)
 		}
 	})
 
