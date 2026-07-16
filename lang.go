@@ -116,6 +116,8 @@ func First[T any](s []T) T {
 }
 
 // If returns ifTrue if condition is true, otherwise it returns ifFalse.
+// Note: both arguments are evaluated before the call, so don't pass expressions
+// with side effects or ones that may panic (e.g. a nil pointer dereference).
 //
 //	a := If(true, 1, 2)  // a == 1
 //	b := If(false, 1, 2) // b == 2
@@ -128,9 +130,9 @@ func If[T any](cond bool, ifTrue, ifFalse T) T {
 
 // IfF executes the function if the condition is true.
 //
-// IfF(true, func() { println("foo") })  // foo
-// IfF(false, func() { println("foo") }) // nothing
-// IfF(false, func() { println("foo") }, func() { println("bar") }) // bar
+//	IfF(true, func() { println("foo") })  // foo
+//	IfF(false, func() { println("foo") }) // nothing
+//	IfF(false, func() { println("foo") }, func() { println("bar") }) // bar
 func IfF(cond bool, f func(), fFalse ...func()) {
 	if cond && f != nil {
 		f()
@@ -142,9 +144,9 @@ func IfF(cond bool, f func(), fFalse ...func()) {
 
 // IfV executes the function if the value is not zero.
 //
-//	a := IfV(1, func() { println("foo") })  // foo
-//	b := IfV(0, func() { println("foo") })  // nothing
-//	c := IfV(0, func() { println("foo") }, func() { println("bar") }) // bar
+//	IfV(1, func() { println("foo") })  // foo
+//	IfV(0, func() { println("foo") })  // nothing
+//	IfV(0, func() { println("foo") }, func() { println("bar") }) // bar
 func IfV[T comparable](v T, f func(), fFalse ...func()) {
 	var zero T
 	if v != zero && f != nil {
@@ -160,7 +162,7 @@ func IfV[T comparable](v T, f func(), fFalse ...func()) {
 //
 //	a := GetWithSep("config", '/')  // a == "config/"
 //	b := GetWithSep("config/", '/') // b == "config/"
-//	c := GetWithSep("config/files", '/') // b == "config/files/"
+//	c := GetWithSep("config/files", '/') // c == "config/files/"
 func GetWithSep(value string, sep byte) string {
 	if value == "" {
 		return ""
@@ -173,7 +175,7 @@ func GetWithSep(value string, sep byte) string {
 
 // CheckSlice returns the first argument if it is not empty, else returns the second one.
 //
-//	a := []int{}
+//	a := []string{}
 //	b := []string{"foo", "bar"}
 //	c := CheckSlice(a, b)  // c == []string{"foo", "bar"}
 func CheckSlice[T any](v1, v2 []T) []T {
@@ -185,7 +187,7 @@ func CheckSlice[T any](v1, v2 []T) []T {
 
 // CheckSliceSingle returns the first argument if it is not empty, else returns the second one wrapped in a slice.
 //
-//	a := nil
+//	var a []string
 //	b := "foo"
 //	c := CheckSliceSingle(a, b)  // c == []string{"foo"}
 func CheckSliceSingle[T any](s []T, v T) []T {
@@ -197,7 +199,7 @@ func CheckSliceSingle[T any](s []T, v T) []T {
 
 // CheckMap returns the first argument if it is not empty, else returns the second one.
 //
-//	a := map[string]int{}
+//	a := map[string]string{}
 //	b := map[string]string{"foo": "bar"}
 //	c := CheckMap(a, b)  // c == map[string]string{"foo": "bar"}
 func CheckMap[K comparable, V any](v1, v2 map[K]V) map[K]V {
@@ -260,9 +262,6 @@ func AppendIfAll[T comparable](s []T, v ...T) []T {
 	if len(v) == 0 {
 		return s
 	}
-	if s == nil {
-		s = []T{}
-	}
 	var zero T
 	for _, e := range v {
 		if e == zero {
@@ -283,9 +282,6 @@ func AppendIfAll[T comparable](s []T, v ...T) []T {
 func AppendIfAny[T comparable](s []T, v ...T) []T {
 	if len(v) == 0 {
 		return s
-	}
-	if s == nil {
-		s = []T{}
 	}
 	var zero T
 	for _, e := range v {
@@ -308,7 +304,7 @@ func ConvertValue[T, K any](v T, f func(T) K) K {
 	return f(v)
 }
 
-// WrapError adds a context message to an error.
+// Wrap adds a context message to an error.
 //
 //	err := SomeFunction()
 //	if err != nil {
@@ -419,12 +415,12 @@ func String(s any, maxLenRaw ...int) string {
 		res := v.Format(time.RFC3339)
 		return TruncateString(res, Check(maxLen, len(res)))
 
-	case fmt.Stringer:
-		res := v.String()
-		return TruncateString(res, Check(maxLen, len(res)))
-
 	case error:
 		res := v.Error()
+		return TruncateString(res, Check(maxLen, len(res)))
+
+	case fmt.Stringer:
+		res := v.String()
 		return TruncateString(res, Check(maxLen, len(res)))
 
 	case int:
@@ -497,7 +493,7 @@ func S(s any, maxLenRaw ...int) string {
 //	c := Type[string]("foo") // c == "foo"
 //	d := Type[someEnum]("foo") // d == "" (type someEnum string) !!!
 //	var v any = someEnum("foo")
-//	e := Type[someEnum](v) // e == "foo" e.Type() == someEnum
+//	e := Type[someEnum](v) // e == "foo" (e is of type someEnum)
 func Type[Target any](s any) Target {
 	var zero Target
 	if s == nil {
@@ -520,6 +516,10 @@ func Retry[T any](maxAttempts int, f func() (T, error)) (T, error) {
 		var zero T
 		return zero, fmt.Errorf("maxAttempts must be positive, got %d", maxAttempts)
 	}
+	if f == nil {
+		var zero T
+		return zero, errors.New("f must not be nil")
+	}
 	var lastErr error
 	for i := 0; i < maxAttempts; i++ {
 		result, err := f()
@@ -536,6 +536,9 @@ var ErrTimeout = errors.New("operation timed out")
 
 // RunWithTimeout runs a function with a timeout.
 // If the function does not complete within the timeout, ErrTimeout is returned.
+// If f panics before the timeout, the panic is re-raised on the caller's goroutine,
+// so it behaves like a direct call and can be recovered by the caller; a panic that
+// happens after the timeout is dropped.
 // Note: the function goroutine is not cancelled on timeout; if f does not return,
 // the goroutine will leak. Use context-based cancellation inside f for long-running operations.
 //
@@ -543,10 +546,21 @@ var ErrTimeout = errors.New("operation timed out")
 //	    return SlowOperation()
 //	})
 func RunWithTimeout[T any](timeout time.Duration, f func() (T, error)) (T, error) {
+	if f == nil {
+		var zero T
+		return zero, errors.New("f must not be nil")
+	}
+
 	chVal := make(chan T, 1)
 	chErr := make(chan error, 1)
+	chPanic := make(chan any, 1)
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				chPanic <- r
+			}
+		}()
 		v, err := f()
 		chVal <- v
 		chErr <- err
@@ -555,6 +569,8 @@ func RunWithTimeout[T any](timeout time.Duration, f func() (T, error)) (T, error
 	select {
 	case v := <-chVal:
 		return v, <-chErr
+	case p := <-chPanic:
+		panic(p)
 	case <-time.After(timeout):
 		var zero T
 		return zero, ErrTimeout

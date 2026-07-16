@@ -574,6 +574,11 @@ func TestAppendIfAll_NilSlice(t *testing.T) {
 	if len(result) != 0 {
 		t.Errorf("Expected empty slice when one argument is zero, got %v", result)
 	}
+
+	// Nil input stays nil when nothing is appended
+	if result != nil {
+		t.Errorf("Expected nil result for nil input when nothing is appended, got %#v", result)
+	}
 }
 
 func TestAppendIfAny_NilSlice(t *testing.T) {
@@ -590,6 +595,12 @@ func TestAppendIfAny_NilSlice(t *testing.T) {
 	expected = []string{"foo"}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %v, got %v", expected, result)
+	}
+
+	// Nil input stays nil when all arguments are zero
+	result = lang.AppendIfAny(nilSlice, "", "")
+	if result != nil {
+		t.Errorf("Expected nil result for nil input when nothing is appended, got %#v", result)
 	}
 }
 
@@ -806,6 +817,11 @@ func (s someEnum) String() string {
 	return string(s)
 }
 
+type errorAndStringer struct{}
+
+func (errorAndStringer) Error() string  { return "error-message" }
+func (errorAndStringer) String() string { return "string-message" }
+
 func TestString(t *testing.T) {
 	t.Run("nil input", func(t *testing.T) {
 		result := lang.String(nil)
@@ -847,6 +863,13 @@ func TestString(t *testing.T) {
 		result := lang.String(errors.New("error"))
 		if result != "error" {
 			t.Errorf("Expected %q, got %q", "error", result)
+		}
+	})
+
+	t.Run("error preferred over Stringer", func(t *testing.T) {
+		result := lang.String(errorAndStringer{})
+		if result != "error-message" {
+			t.Errorf("Expected Error() to win for a type implementing both, got %q", result)
 		}
 	})
 
@@ -1373,6 +1396,18 @@ func TestRetry(t *testing.T) {
 			t.Error("Expected error for negative max attempts")
 		}
 	})
+
+	t.Run("nil function", func(t *testing.T) {
+		_, err := lang.Retry[string](3, nil)
+
+		if err == nil {
+			t.Error("Expected error for nil function")
+		}
+
+		if !strings.Contains(err.Error(), "must not be nil") {
+			t.Errorf("Expected nil function error message, got %v", err.Error())
+		}
+	})
 }
 
 func TestRunWithTimeout(t *testing.T) {
@@ -1424,6 +1459,36 @@ func TestRunWithTimeout(t *testing.T) {
 
 		if result != "" {
 			t.Errorf("Expected empty result, got %q", result)
+		}
+	})
+
+	t.Run("nil function", func(t *testing.T) {
+		_, err := lang.RunWithTimeout[string](100*time.Millisecond, nil)
+
+		if err == nil {
+			t.Error("Expected error for nil function")
+		}
+
+		if !strings.Contains(err.Error(), "must not be nil") {
+			t.Errorf("Expected nil function error message, got %v", err.Error())
+		}
+	})
+
+	t.Run("panic propagates to caller and is recoverable", func(t *testing.T) {
+		recovered := func() (r any) {
+			defer func() { r = recover() }()
+			lang.RunWithTimeout(time.Second, func() (string, error) {
+				panic("boom")
+			})
+			return nil
+		}()
+
+		if recovered == nil {
+			t.Fatal("Expected panic to propagate to the caller")
+		}
+
+		if recovered != "boom" {
+			t.Errorf("Expected panic value 'boom', got %v", recovered)
 		}
 	})
 }
